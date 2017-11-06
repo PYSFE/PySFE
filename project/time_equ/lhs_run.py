@@ -3,10 +3,10 @@ from scipy.stats.distributions import norm, gumbel_r, gumbel_l
 import numpy as np
 import project.time_equ.ec_param_fire as pf
 import project.time_equ.ec3_ht as ht
-import project.time_equ.tfm as tfm
 import matplotlib.pyplot as plt
 from project.func.temperature_fires import travelling_fire as fire
 from project.func.temperature_steel_section import protected_steel_eurocode as steel
+from project.dat.steel_carbon import Thermal as steel_thermal_dat
 
 #   Handy interim functions
 
@@ -33,6 +33,10 @@ def get_max_st_temp(tsec,temps,rho,c,Ap,kp,rhop,cp,dp,Hp):
     max_temp = np.amax(temperature)
     return max_temp, temperature
 
+
+steel_prop = steel_thermal_dat()
+c = steel_prop.property_thermal_specific_heat()
+rho = steel_prop.property_density()
 
 #   Define the inputs
 lhs_iterations = 1000
@@ -147,9 +151,6 @@ for i in range(0,lhs_iterations):
         time_step=time_step,
         time_ubound=fire_dur,
     )
-
-    c = ht.thermal("specific heat capacity")
-    rho = ht.thermal ("density")
 
     max_temp, steelt = get_max_st_temp(tsec,temps,rho,c,Ap,kp,rhop,cp,dp,Hp)
     st_fract = 1- (i / lhs_iterations)

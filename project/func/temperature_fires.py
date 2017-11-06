@@ -265,33 +265,16 @@ def travelling_fire(
     t_lim = min([t_burn, l / s])
 
     # reduce resolution to fit time step for t_burn, t_decay, t_lim
-    t_burn_ = round(t_burn/time_step, 0) * time_step
     t_decay_ = round(t_decay/time_step, 0) * time_step
     t_lim_ = round(t_lim/time_step, 0) * time_step
     if t_decay_ == t_lim_: t_lim_ -= time_step
 
-    # workout burning time phases in an array
-    time_growth = time[time <= t_lim_]
-    time_peak = time[(t_lim_ <= time) * (time < t_decay_)]
-    time_decay = time[time > t_decay_]
-
-    time_growth -= min(time_growth)
-    time_decay -= min(time_decay)
-    time_peak -= min(time_peak)
-
     # workout the heat release rate ARRAY (corrected with time)
-    Q_growth = RHRf * w * s * time_growth
-    Q_max = np.asarray(time_peak, dtype=float)
-    Q_max.fill(min(
-        [RHRf * w * s * t_burn,
-         RHRf * w * l]
-    ))
-    Q_decay = np.max(
-        [max(Q_max) - (time_decay * w * s * RHRf),
-         time_decay * 0],
-        axis=0
-    )
-    Q = np.concatenate((Q_growth, Q_max, Q_decay)) * 1000.
+    Q_growth = (RHRf * w * s * time) * (time < t_lim_)
+    Q_peak = min([RHRf * w * s * t_burn, RHRf * w * l]) * (time >= t_lim_) * (time <= t_decay_)
+    Q_decay = (max(Q_peak) - (time-t_decay_) * w * s * RHRf) * (time > t_decay_)
+    Q_decay[Q_decay < 0] = 0
+    Q = (Q_growth + Q_peak + Q_decay) * 1000.
 
     # workout the distance between fire_curve midian to the structural element r
     l_fire_front = s * time
@@ -305,8 +288,8 @@ def travelling_fire(
     r[r == 0] = 0.001  # will cause crash if r = 0
 
     # workout the far field temperature of gas T_g
-    T_g1 = (5.38 * np.power(Q / r, 2 / 3) / h_s) * (r / h_s > 0.18).astype(int)
-    T_g2 = (16.9 * np.power(Q, 2 / 3) / np.power(h_s, 5/3)) * (r/h_s <= 0.18).astype(int)
+    T_g1 = (5.38 * np.power(Q / r, 2 / 3) / h_s) * ((r/h_s) > 0.18)
+    T_g2 = (16.9 * np.power(Q, 2 / 3) / np.power(h_s, 5/3)) * ((r/h_s) <= 0.18)
     T_g = T_g1 + T_g2 + T_0
 
     T_g[T_g >= 1200.] = 1200.
