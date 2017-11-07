@@ -1,1 +1,1 @@
-# PySFE
+# pySFE
