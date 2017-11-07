@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 from scipy import integrate, gradient
-from project.dat.steel_carbon import thermal
+
 
 def make_temperature_eurocode_protected_steel(
         time,
