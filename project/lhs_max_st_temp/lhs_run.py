@@ -1,8 +1,8 @@
 from pyDOE import *
 from scipy.stats.distributions import norm, gumbel_r, gumbel_l
 import numpy as np
-import project.time_equ.ec_param_fire as pf
-import project.time_equ.ec3_ht as ht
+import project.lhs_max_st_temp.ec_param_fire as pf
+import project.lhs_max_st_temp.ec3_ht as ht
 import matplotlib.pyplot as plt
 from project.func.temperature_fires import travelling_fire as fire
 from project.func.temperature_steel_section import protected_steel_eurocode as steel
