@@ -252,14 +252,15 @@ if __name__ == "__main__":
             if jobs.ready():
                 break
             else:
-                print(q.qsize() / count_total_simulations)
-                time.sleep(0.5)
+                print("Complete =", q.qsize() * 100 / count_total_simulations, "%")
+                time.sleep(1.5)
         results = jobs.get()
     else:
         pool = mp.Pool(os.cpu_count())
         results = pool.map(worker, list_kwargs)
     time1 = time.perf_counter() - time1
-    print(time1)
+    print("Complete = 100.0 %")
+    print("Simulation time =", time1, "s")
 
     results = np.array(results)
     results.sort()
