@@ -89,7 +89,7 @@ def mc_calculation(
     return max_temp
 
 
-def mc_inputs_maker():
+def mc_inputs_maker(simulation_count):
     from scipy.stats.distributions import norm, gumbel_r, gumbel_l
     import numpy as np
     from project.dat.steel_carbon import Thermal
@@ -107,7 +107,7 @@ def mc_inputs_maker():
 
     #   Define the inputs
 
-    lhs_iterations = 100
+    lhs_iterations = simulation_count
 
     #   Compartment dimensions
 
@@ -228,9 +228,10 @@ if __name__ == "__main__":
     import numpy as np
     from project.cls.plot import Scatter2D
     import matplotlib.pyplot as plt
+    import os
 
     # make all inputs on the one go
-    args = mc_inputs_maker()
+    args = mc_inputs_maker(simulation_count = 1000)
 
     # implement of mp
     time1 = time.perf_counter()
@@ -243,7 +244,7 @@ if __name__ == "__main__":
     results.sort()
     percentile = np.arange(1, np.shape(results)[0]+1, 1) / np.shape(results)[0]
 
-    plt.figure(1)
+    plt.figure(os.cpu_count())
     plt.plot(results, percentile)
     plt.grid(True)
     plt.xlabel('Max Steel Temperature [Deg C]')
