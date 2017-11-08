@@ -218,13 +218,13 @@ def mc_inputs_maker():
     return list_inputs
 
 
-# wrapper to deal with inputs format (dict -> kwarg
+# wrapper to deal with inputs format (dict-> kwargs)
 def worker(kwargs): return mc_calculation(**kwargs)
+
 
 if __name__ == "__main__":
     import multiprocessing as mp
     import time
-
 
     # make all inputs on the one go
     args = mc_inputs_maker()
