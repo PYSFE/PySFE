@@ -117,10 +117,10 @@ def mc_inputs_maker(simulation_count):
 
     #   Compartment dimensions all in [m]
 
-    breadth = 16        #   Room breadth [m]
-    depth = 20          #   Room depth [m]
+    breadth = 22.4        #   Room breadth [m]
+    depth = 44.8          #   Room depth [m]
     height = 3.0        #   Room height [m]
-    win_width = 20      #   Window width [m]
+    win_width = 90      #   Window width [m]
     win_height = 2.5    #   Window height [m]
 
     #   Deterministic fire inputs
@@ -240,7 +240,7 @@ if __name__ == "__main__":
     is_track_progress = True
 
     # make all inputs on the one go
-    list_kwargs = mc_inputs_maker(simulation_count=10000)
+    list_kwargs = mc_inputs_maker(simulation_count=1000)
 
     # Print starting
 
@@ -271,6 +271,13 @@ if __name__ == "__main__":
     results = np.array(results)
     results.sort()
     percentile = np.arange(1, np.shape(results)[0]+1, 1) / np.shape(results)[0]
+
+    #   Write to csv
+
+    n_rows, = np.shape(results)
+    out = np.append(results, percentile, 0)
+    out = np.reshape(out, (n_rows, 2), order='F')
+    np.savetxt("lhs_mp_out.csv", out, delimiter=",")
 
     plt.figure(os.cpu_count())
     plt.plot(results, percentile)
