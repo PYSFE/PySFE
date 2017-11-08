@@ -6,7 +6,7 @@ import project.lhs_max_st_temp.ec3_ht as ht
 import project.lhs_max_st_temp.tfm_alt as tfma
 from project.dat.steel_carbon import Thermal
 import matplotlib.pyplot as plt
-from project.lhs_max_st_temp.lhs_run_multit_hreading import mc_calculation
+from project.lhs_max_st_temp.lhs_run_mp import mc_calculation
 
 steel_prop = Thermal()
 c = steel_prop.c()
