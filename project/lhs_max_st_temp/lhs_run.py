@@ -6,6 +6,7 @@ import project.lhs_max_st_temp.ec3_ht as ht
 import project.lhs_max_st_temp.tfm_alt as tfma
 from project.dat.steel_carbon import Thermal
 import matplotlib.pyplot as plt
+from project.lhs_max_st_temp.lhs_run_multit_hreading import mc_calculation
 
 steel_prop = Thermal()
 c = steel_prop.c()
@@ -112,6 +113,36 @@ peak_st_fract = []
 peak_st_temp = []
 
 for i in range(0,lhs_iterations):
+    dict_inputs = {
+        "window_height":                win_height,
+        "window_width":                 win_width,
+        "window_open_fraction":         glaz_lhs[i],
+        "room_breadth":                 breadth,
+        "room_depth":                   depth,
+        "room_height":                  height,
+        "fire_load_density":            qfd_lhs[i],
+        "fire_hrr_density":             hrr_pua,
+        "fire_spread_speed":            spread_lhs[i],
+        "time_limiting":                limit_time,
+        "room_wall_thermal_inertia":    inertia,
+        "fire_duration":                fire_dur,
+        "time_step":                    time_step,
+        "beam_position":                beam_lhs[i],
+        "time_start":                   t_start,
+        "temperature_max_near_field":   min([nft_lhs[i],1200]),
+        "beam_rho":                     rho,
+        "beam_c":                       c,
+        "beam_cross_section_area":      Ap,
+        "protection_k":                 kp,
+        "protection_rho":               rhop,
+        "protection_c":                 cp,
+        "protection_depth":             dp,
+        "protection_protected_perimeter": Hp
+    }
+
+    a = mc_calculation(**dict_inputs)
+
+
     fled = qfd_lhs[i]
     open_frac = glaz_lhs[i]
     spread = spread_lhs[i]
