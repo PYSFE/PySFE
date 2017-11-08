@@ -225,6 +225,9 @@ def worker(kwargs): return mc_calculation(**kwargs)
 if __name__ == "__main__":
     import multiprocessing as mp
     import time
+    import numpy as np
+    from project.cls.plot import Scatter2D
+    import matplotlib.pyplot as plt
 
     # make all inputs on the one go
     args = mc_inputs_maker()
@@ -234,5 +237,16 @@ if __name__ == "__main__":
     pool = mp.Pool(2)
     results = pool.map(worker, args)
     time1 = time.perf_counter() - time1
-
     print(time1)
+
+    results = np.array(results)
+    results.sort()
+    percentile = np.arange(1, np.shape(results)[0]+1, 1) / np.shape(results)[0]
+
+    plt.figure(1)
+    plt.plot(results, percentile)
+    plt.grid(True)
+    plt.xlabel('Max Steel Temperature [Deg C]')
+    plt.ylabel('Fractile [-]')
+    plt.show()
+
