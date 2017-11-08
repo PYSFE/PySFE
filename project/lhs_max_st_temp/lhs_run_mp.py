@@ -1,4 +1,16 @@
 # -*-coding: utf-8 -*-
+import os
+import time
+import multiprocessing as mp
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats.distributions import norm, gumbel_r, gumbel_l
+from pyDOE import lhs
+from project.dat.steel_carbon import Thermal
+import project.lhs_max_st_temp.ec_param_fire as pf
+import project.lhs_max_st_temp.tfm_alt as tfma
+import project.lhs_max_st_temp.ec3_ht as ht
+
 
 def mc_calculation(
     window_height,
@@ -26,10 +38,6 @@ def mc_calculation(
     protection_depth,
     protection_protected_perimeter
 ):
-    import project.lhs_max_st_temp.ec_param_fire as pf
-    import project.lhs_max_st_temp.tfm_alt as tfma
-    import project.lhs_max_st_temp.ec3_ht as ht
-    import numpy as np
 
     #   Check on applicable fire curve
     av = window_height * window_width * window_open_fraction
@@ -90,10 +98,6 @@ def mc_calculation(
 
 
 def mc_inputs_maker(simulation_count):
-    from scipy.stats.distributions import norm, gumbel_r, gumbel_l
-    import numpy as np
-    from project.dat.steel_carbon import Thermal
-    from pyDOE import lhs
 
     steel_prop = Thermal()
     c = steel_prop.c()
@@ -219,24 +223,40 @@ def mc_inputs_maker(simulation_count):
 
 
 # wrapper to deal with inputs format (dict-> kwargs)
-def worker(kwargs): return mc_calculation(**kwargs)
+def worker_with_progress_tracker(arg):
+    kwargs, q = arg
+    result = mc_calculation(**kwargs)
+    q.put(kwargs)
+    return result
+
+
+def worker(arg): return mc_calculation(**arg)
 
 
 if __name__ == "__main__":
-    import multiprocessing as mp
-    import time
-    import numpy as np
-    from project.cls.plot import Scatter2D
-    import matplotlib.pyplot as plt
-    import os
+    is_track_progress = False
 
     # make all inputs on the one go
-    args = mc_inputs_maker(simulation_count = 1000)
+    list_kwargs = mc_inputs_maker(simulation_count=1000)
 
-    # implement of mp
+    # implement of mp, with ability to track progress
     time1 = time.perf_counter()
-    pool = mp.Pool(2)
-    results = pool.map(worker, args)
+    if is_track_progress:
+        m = mp.Manager()
+        q = m.Queue()
+        p = mp.Pool(os.cpu_count())
+        jobs = p.map_async(worker_with_progress_tracker, [(kwargs, q) for kwargs in list_kwargs])
+        count_total_simulaiton = len(list_kwargs)
+        while True:
+            if jobs.ready():
+                break
+            else:
+                print(q.qsize()/count_total_simulaiton)
+                time.sleep(0.5)
+        results = jobs.get()
+    else:
+        pool = mp.Pool(os.cpu_count())
+        results = pool.map(worker, list_kwargs)
     time1 = time.perf_counter() - time1
     print(time1)
 
@@ -250,4 +270,4 @@ if __name__ == "__main__":
     plt.xlabel('Max Steel Temperature [Deg C]')
     plt.ylabel('Fractile [-]')
     plt.show()
-
+    #
