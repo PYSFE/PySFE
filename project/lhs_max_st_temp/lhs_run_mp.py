@@ -234,7 +234,8 @@ def worker(arg): return mc_calculation(**arg)
 
 
 if __name__ == "__main__":
-    is_track_progress = False
+    # SETTINGS
+    is_track_progress = True
 
     # make all inputs on the one go
     list_kwargs = mc_inputs_maker(simulation_count=1000)
@@ -246,12 +247,12 @@ if __name__ == "__main__":
         q = m.Queue()
         p = mp.Pool(os.cpu_count())
         jobs = p.map_async(worker_with_progress_tracker, [(kwargs, q) for kwargs in list_kwargs])
-        count_total_simulaiton = len(list_kwargs)
+        count_total_simulations = len(list_kwargs)
         while True:
             if jobs.ready():
                 break
             else:
-                print(q.qsize()/count_total_simulaiton)
+                print(q.qsize() / count_total_simulations)
                 time.sleep(0.5)
         results = jobs.get()
     else:
