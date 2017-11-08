@@ -1,16 +1,18 @@
 # -*-coding: utf-8 -*-
 import os
+import random
 import time
 import multiprocessing as mp
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats.distributions import norm, gumbel_r, gumbel_l
+from scipy.stats.distributions import norm, gumbel_r
 from pyDOE import lhs
 from project.dat.steel_carbon import Thermal
 import project.lhs_max_st_temp.ec_param_fire as pf
 import project.lhs_max_st_temp.tfm_alt as tfma
 import project.lhs_max_st_temp.ec3_ht as ht
 
+random.seed(123)
 
 def mc_calculation(
     window_height,
@@ -113,45 +115,45 @@ def mc_inputs_maker(simulation_count):
 
     lhs_iterations = simulation_count
 
-    #   Compartment dimensions
+    #   Compartment dimensions all in [m]
 
-    breadth = 16
-    depth = 20
-    height = 3.0
-    win_width = 20
-    win_height = 2.5
+    breadth = 16        #   Room breadth [m]
+    depth = 20          #   Room depth [m]
+    height = 3.0        #   Room height [m]
+    win_width = 20      #   Window width [m]
+    win_height = 2.5    #   Window height [m]
 
     #   Deterministic fire inputs
 
-    t_start = 0
-    limit_time = 0.333
-    inertia = 720
-    fire_dur = 18000
-    time_step = 30
-    hrr_pua = 0.25
+    t_start = 0             #   Start time of simulation [s]
+    limit_time = 0.333      #   Limiting time for fuel controlled case in EN 1991-1-2 parametric fire [hr]
+    inertia = 720           #   Compartment thermal inertia [J/m2s1/2K]
+    fire_dur = 18000        #   Maximum time in time array [s]
+    time_step = 30          #   Time step used for fire and heat transfer [s]
+    hrr_pua = 0.25          #   HRR density [MW/sq.m]
 
-    #   Section properties
+    #   Section properties for heat transfer evaluation
 
-    Hp = 2.14
-    Ap = 0.017
-    dp = 0.0125
-    kp = 0.2
-    rhop = 800
-    cp = 1700
+    Hp = 2.14               #   Heated perimeter [m]
+    Ap = 0.017              #   Cross section area [sq.m]
+    dp = 0.0125             #   Thickness of protection [m]
+    kp = 0.2                #   Protection conductivity [W/m.K]
+    rhop = 800              #   Density of protection [kg/cb.m]
+    cp = 1700               #   Specific heat of protection [J/kg.K]
 
     #   Set distribution mean and standard dev
 
-    qfd_std = 126
-    qfd_mean = 420
-    glaz_min = 0.1
-    glaz_max = 0.999
-    beam_min = 0.6
-    beam_max = 0.9
-    com_eff_min = 0.75
-    com_eff_max = 0.999
-    spread_min = 0.0035
-    spread_max = 0.0193
-    avg_nft = 1050
+    qfd_std = 126           #   Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
+    qfd_mean = 420          #   Fire load density - Gumbel distribution - mean [MJ/sq.m]
+    glaz_min = 0.1          #   Min glazing fall-out fraction [-] - Linear dist
+    glaz_max = 0.999        #   Max glazing fall-out fraction [-]  - Linear dist
+    beam_min = 0.6          #   Min beam location relative to compartment length for TFM [-]  - Linear dist
+    beam_max = 0.9          #   Max beam location relative to compartment length for TFM [-]  - Linear dist
+    com_eff_min = 0.75      #   Min combustion efficiency [-]  - Linear dist
+    com_eff_max = 0.999     #   Max combustion efficiency [-]  - Linear dist
+    spread_min = 0.0035     #   Min spread rate for TFM [m/s]  - Linear dist
+    spread_max = 0.0193     #   Max spread rate for TFM [m/s]  - Linear dist
+    avg_nft = 1050          #   TFM near field temperature - Norm distribution - mean [C]
 
     #   Create random number array for each stochastic variable
 
@@ -238,7 +240,11 @@ if __name__ == "__main__":
     is_track_progress = True
 
     # make all inputs on the one go
-    list_kwargs = mc_inputs_maker(simulation_count=1000)
+    list_kwargs = mc_inputs_maker(simulation_count=10000)
+
+    # Print starting
+
+    print("Starting simulation!")
 
     # implement of mp, with ability to track progress
     time1 = time.perf_counter()
@@ -253,14 +259,14 @@ if __name__ == "__main__":
                 break
             else:
                 print("Complete =", q.qsize() * 100 / count_total_simulations, "%")
-                time.sleep(1.5)
+                time.sleep(2)
         results = jobs.get()
     else:
         pool = mp.Pool(os.cpu_count())
         results = pool.map(worker, list_kwargs)
     time1 = time.perf_counter() - time1
     print("Complete = 100.0 %")
-    print("Simulation time =", time1, "s")
+    print("Done! Simulation time =", time1, "s")
 
     results = np.array(results)
     results.sort()
