@@ -72,29 +72,28 @@ def protected_steel_eurocode(
         c_steel_T,
         area_steel_section,
         k_protection,
-        density_protection,
+        rho_protection,
         c_protection,
         thickness_protection,
         perimeter_protected
 ):
     """
+    SI UNITS!
     This function calculate the temperature curve of protected steel section based on BS EN 1993-1-2:2005, Section 4
     . Ambient (fire) time-temperature data must be given, as well as the parameters specified below.
     :param time:                    {ndarray} [s]
-    :param temperature_ambient:        {ndarray} [K]
+    :param temperature_ambient:     {ndarray} [K]
     :param rho_steel_T:             {Func} [kg/m3]
     :param c_steel_T:               {Func} [J/kg/K]
     :param area_steel_section:      {float} [m2]
     :param k_protection:            {float} [K/kg/m]
-    :param density_protection:      {float} [kg/m3]
+    :param rho_protection:          {float} [kg/m3]
     :param c_protection:            {float} [J/K/kg]
     :param thickness_protection:    {float} [m]
     :param perimeter_protected:     {float} [m]
-    :return data_dict_out:          {Dict} [-]
     :return time:                   {ndarray, float} [s]
     :return temperature_steel:      {ndarray, float} [K]
-    :return temperature_rate_steel: {ndarray, float} [K/s]
-    :return specific_heat_steel:    {ndarray, float} [J/K/kg]
+    :return data_all:               {Dict} [-]
     """
     # todo: 4.2.5.2 (2) - thermal properties for the insulation material
     # todo: revise BS EN 1993-1-2:2005, Clauses 4.2.5.2
@@ -102,7 +101,7 @@ def protected_steel_eurocode(
     V = area_steel_section
     rho_a = rho_steel_T
     lambda_p = k_protection
-    rho_p = density_protection
+    rho_p = rho_protection
     d_p = thickness_protection
     A_p = perimeter_protected
     c_p = c_protection
@@ -112,7 +111,7 @@ def protected_steel_eurocode(
     specific_heat_steel = time * 0.
 
     # Check time step <= 30 seconds. [BS EN 1993-1-2:2005, Clauses 4.2.5.2 (3)]
-    time_change = gradient(time)
+    # time_change = gradient(time)
     # if np.max(time_change) > 30.:
     # raise ValueError("Time step needs to be less than 30s: {0}".format(np.max(time)))
 
@@ -121,7 +120,7 @@ def protected_steel_eurocode(
     next(temperature_ambient_)  # skip the first item
     for i, T_g in enumerate(temperature_ambient_):
         i += 1  # actual index since the first item had been skipped.
-        specific_heat_steel[i] = c_steel_T(temperature_steel[i - 1] + 273.15)
+        specific_heat_steel[i] = c_steel_T(temperature_steel[i - 1])
 
         # Steel temperature equations are from [BS EN 1993-1-2:2005, Clauses 4.2.5.2, Eq. 4.27]
         phi = (c_p * rho_p / specific_heat_steel[i] / rho_a(T_g)) * d_p * A_p / V
