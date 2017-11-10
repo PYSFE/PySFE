@@ -44,7 +44,7 @@ def make_temperature_eurocode_protected_steel(
     specific_heat_steel = time * 0.
 
     # Check time step <= 30 seconds. [BS EN 1993-1-2:2005, Clauses 4.2.5.2 (3)]
-    time_change = gradient(time)
+    # time_change = gradient(time)
     # if np.max(time_change) > 30.:
         # raise ValueError("Time step needs to be less than 30s: {0}".format(np.max(time)))
 

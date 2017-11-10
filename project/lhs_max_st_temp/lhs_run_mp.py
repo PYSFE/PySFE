@@ -10,11 +10,16 @@ from pyDOE import lhs
 from project.dat.steel_carbon import Thermal
 import project.lhs_max_st_temp.ec_param_fire as pf
 import project.lhs_max_st_temp.tfm_alt as tfma
-import project.lhs_max_st_temp.ec3_ht as ht
+# from project.lhs_max_st_temp.ec3_ht import make_temperature_eurocode_protected_steel as _steel_temperature
+from project.func.temperature_steel_section import protected_steel_eurocode as _steel_temperature
+from scipy.optimize import fmin, newton, minimize
+# from scipy.optimize import newton
+import pandas as pd
+import copy
 
 random.seed(123)
 
-def mc_calculation(
+def mc_body(
     window_height,
     window_width,
     window_open_fraction,
@@ -37,8 +42,10 @@ def mc_calculation(
     protection_k,
     protection_rho,
     protection_c,
-    protection_depth,
-    protection_protected_perimeter
+    protection_thickness,
+    protection_protected_perimeter,
+    beam_temperature_max_goal,
+    beam_temperature_max_goal_tolerance=2
 ):
 
     #   Check on applicable fire curve
@@ -90,16 +97,29 @@ def mc_calculation(
     # max_temp = np.amax(tempsteel)
 
     #   Solve heat transfer using EC3 correlations
-    data_dict_out, time, tempsteel, temperature_rate_steel, specific_heat_steel = \
-        ht.make_temperature_eurocode_protected_steel(
-            tsec, temps, beam_rho, beam_c, beam_cross_section_area, protection_k, protection_rho, protection_c, protection_depth, protection_protected_perimeter
-        )
-    max_temp = np.amax(tempsteel)
+    # SI UNITS FOR INPUTS!
+    protection_thickness_ = copy.copy(protection_thickness)
+    if beam_temperature_max_goal != 0:
+        def helper_func(protection_depth_):
+            time, temperature_steel, data_all = _steel_temperature(
+                tsec, temps+273.15, beam_rho, beam_c, beam_cross_section_area, protection_k, protection_rho, protection_c, protection_depth_, protection_protected_perimeter
+            )
+            max_temp_diff = np.max(temperature_steel) - beam_temperature_max_goal
+            return max_temp_diff
 
-    return max_temp
+        protection_thickness_ = newton(helper_func, 0.01, tol=beam_temperature_max_goal_tolerance)
+        # protection_thickness_ = minimize(helper_func, 0.01)
+
+    time, temperature_steel, data_all = _steel_temperature(
+            tsec, temps+273.15, beam_rho, beam_c, beam_cross_section_area, protection_k, protection_rho, protection_c, protection_thickness_, protection_protected_perimeter
+    )
+
+    max_temp = np.amax(temperature_steel) - 273.15
+
+    return max_temp, protection_thickness_
 
 
-def mc_inputs_maker(simulation_count):
+def mc_inputs_maker(simulation_count, beam_temperature_max_goal):
 
     steel_prop = Thermal()
     c = steel_prop.c()
@@ -216,8 +236,9 @@ def mc_inputs_maker(simulation_count):
             "protection_k": kp,
             "protection_rho": rhop,
             "protection_c": cp,
-            "protection_depth": dp,
-            "protection_protected_perimeter": Hp
+            "protection_thickness": dp,
+            "protection_protected_perimeter": Hp,
+            "beam_temperature_max_goal": beam_temperature_max_goal
         }
         list_inputs.append(dict_inputs)
 
@@ -227,28 +248,41 @@ def mc_inputs_maker(simulation_count):
 # wrapper to deal with inputs format (dict-> kwargs)
 def worker_with_progress_tracker(arg):
     kwargs, q = arg
-    result = mc_calculation(**kwargs)
+    result = mc_body(**kwargs)
     q.put(kwargs)
     return result
 
 
-def worker(arg): return mc_calculation(**arg)
+def worker(arg): return mc_body(**arg)
 
 
 if __name__ == "__main__":
     # SETTINGS
     is_track_progress = True
+    time_interval_progress_print = 2
+    simulation_count = 1000
+    beam_temperature_max_goal = 873.15  # [K] 0 to disable goal seek
+
+    # SETTING 2
+    output_string_start = "{} - START."
+    output_string_progress = "Complete = {:3.0f} %."
+    output_string_complete = "{} - COMPLETED IN {:0.1f} SECONDS."
 
     # make all inputs on the one go
-    list_kwargs = mc_inputs_maker(simulation_count=1000)
+    print(output_string_start.format("GENERATE INPUTS"))
+    time_count_inputs_maker = time.perf_counter()
+    list_kwargs = mc_inputs_maker(simulation_count=simulation_count, beam_temperature_max_goal=beam_temperature_max_goal)
+    time_count_inputs_maker = time.perf_counter() - time_count_inputs_maker
+    print(output_string_complete.format("GENERATE INPUTS", time_count_inputs_maker))
 
     # Print starting
 
-    print("Starting simulation!")
+    print(output_string_start.format("SIMULATION"))
 
     # implement of mp, with ability to track progress
-    time1 = time.perf_counter()
+    time_count_simulation = time.perf_counter()
     if is_track_progress:
+        # Built-in progress tracking feature enable displaying
         m = mp.Manager()
         q = m.Queue()
         p = mp.Pool(os.cpu_count())
@@ -256,31 +290,36 @@ if __name__ == "__main__":
         count_total_simulations = len(list_kwargs)
         while True:
             if jobs.ready():
+                print(output_string_progress.format(100))
                 break
             else:
-                print("Complete =", q.qsize() * 100 / count_total_simulations, "%")
-                time.sleep(2)
+                print(output_string_progress.format(q.qsize() * 100 / count_total_simulations))
+                time.sleep(time_interval_progress_print)
         results = jobs.get()
     else:
         pool = mp.Pool(os.cpu_count())
         results = pool.map(worker, list_kwargs)
-    time1 = time.perf_counter() - time1
-    print("Complete = 100.0 %")
-    print("Done! Simulation time =", time1, "s")
+    time_count_simulation = time.perf_counter() - time_count_simulation
+    print(output_string_complete.format("SIMULATION", time_count_simulation))
 
+    # POST PROCESS
+    # format outputs
     results = np.array(results)
-    results.sort()
-    percentile = np.arange(1, np.shape(results)[0]+1, 1) / np.shape(results)[0]
+    temperature_max_steel = results[:, 0]
+    protection_thickness = results[:, 1]
+    protection_thickness = protection_thickness[np.argsort(temperature_max_steel)]
+    temperature_max_steel = np.sort(temperature_max_steel)
+    percentile = np.arange(1, simulation_count+1) / simulation_count
+    pf_outputs = pd.DataFrame({"PERCENTILE [%]": percentile,
+                               "PEAK STEEL TEMPERATURE [C]": temperature_max_steel,
+                               "PROTECTION LAYER THICKNESS [m]": protection_thickness})
 
-    #   Write to csv
+    # write outputs to csv
+    pf_outputs.to_csv("output.csv", index=False)
 
-    n_rows, = np.shape(results)
-    out = np.append(results, percentile, 0)
-    out = np.reshape(out, (n_rows, 2), order='F')
-    np.savetxt("lhs_mp_out.csv", out, delimiter=",")
-
+    # plot outputs
     plt.figure(os.cpu_count())
-    plt.plot(results, percentile)
+    plt.plot(temperature_max_steel, percentile)
     plt.grid(True)
     plt.xlabel('Max Steel Temperature [Deg C]')
     plt.ylabel('Fractile [-]')
