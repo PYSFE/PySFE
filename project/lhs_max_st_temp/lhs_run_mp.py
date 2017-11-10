@@ -10,57 +10,58 @@ from pyDOE import lhs
 from project.dat.steel_carbon import Thermal
 import project.lhs_max_st_temp.ec_param_fire as pf
 import project.lhs_max_st_temp.tfm_alt as tfma
-# from project.lhs_max_st_temp.ec3_ht import make_temperature_eurocode_protected_steel as _steel_temperature
 from project.func.temperature_steel_section import protected_steel_eurocode as _steel_temperature
-from scipy.optimize import fmin, newton, minimize
-# from scipy.optimize import newton
+from scipy.optimize import fmin, newton, minimize, minimize_scalar
 import pandas as pd
 import copy
+import logging
 
-random.seed(123)
+printd = logging.getLogger(__name__)
+printd.setLevel(logging.WARNING)
 
-def mc_body(
+
+def mc_calculation(
+    time_step,
+    time_start,
+    time_limiting,
     window_height,
     window_width,
     window_open_fraction,
     room_breadth,
     room_depth,
     room_height,
+    room_wall_thermal_inertia,
     fire_load_density,
     fire_hrr_density,
     fire_spread_speed,
-    time_limiting,
-    room_wall_thermal_inertia,
     fire_duration,
-    time_step,
     beam_position,
-    time_start,
-    temperature_max_near_field,
     beam_rho,
     beam_c,
     beam_cross_section_area,
+    beam_temperature_max_goal,
     protection_k,
     protection_rho,
     protection_c,
     protection_thickness,
     protection_protected_perimeter,
-    beam_temperature_max_goal,
-    beam_temperature_max_goal_tolerance=2
+    temperature_max_near_field=1200,
+    beam_temperature_max_goal_tol=1
 ):
 
     #   Check on applicable fire curve
-    av = window_height * window_width * window_open_fraction
-    af = room_breadth * room_depth
-    at = (2 * af) + ((room_breadth + room_depth) * 2 * room_height)
+    window_area         = window_height * window_width * window_open_fraction
+    room_floor_area     = room_breadth * room_depth
+    room_area           = (2 * room_floor_area) + ((room_breadth + room_depth) * 2 * room_height)
 
     #   Opening factor - is it within EC limits?
-    of_check = pf.opening_factor(av, window_height, at)
+    opening_factor = pf.opening_factor(window_area, window_height, room_area)
 
     #   Spread speed - Does the fire spread to involve the full compartment?
     sp_time = max([room_depth, room_breadth]) / fire_spread_speed
     burnout_m2 = max([fire_load_density / fire_hrr_density, 900.])
 
-    if sp_time < burnout_m2 and 0.02 < of_check <= 0.2:  # If fire spreads throughout compartment and ventilation is within EC limits = Parametric fire
+    if sp_time < burnout_m2 and 0.02 < opening_factor <= 0.2:  # If fire spreads throughout compartment and ventilation is within EC limits = Parametric fire
 
         #   Get parametric fire curve
         tsec, tmin, temps = pf.param_fire(room_breadth, room_depth, room_height, window_width, window_height, window_open_fraction, fire_load_density, time_limiting,
@@ -96,25 +97,46 @@ def mc_body(
     # tempsteel -= 273.15
     # max_temp = np.amax(tempsteel)
 
-    #   Solve heat transfer using EC3 correlations
+    # Solve heat transfer using EC3 correlations
     # SI UNITS FOR INPUTS!
-    protection_thickness_ = copy.copy(protection_thickness)
+    kwargs_steel = {
+        "time":                     tsec,
+        "temperature_ambient":      temps+273.15,
+        "rho_steel_T":              beam_rho,
+        "c_steel_T":                beam_c,
+        "area_steel_section":       beam_cross_section_area,
+        "k_protection":             protection_k,
+        "rho_protection":           protection_rho,
+        "c_protection":             protection_c,
+        "thickness_protection":     protection_thickness,
+        "perimeter_protected":      protection_protected_perimeter,
+    }
     if beam_temperature_max_goal != 0:
-        def helper_func(protection_depth_):
-            time, temperature_steel, data_all = _steel_temperature(
-                tsec, temps+273.15, beam_rho, beam_c, beam_cross_section_area, protection_k, protection_rho, protection_c, protection_depth_, protection_protected_perimeter
-            )
-            max_temp_diff = np.max(temperature_steel) - beam_temperature_max_goal
+        def __steel_temperature(protection_thickness):
+            kwargs_steel["thickness_protection"] = protection_thickness
+            max_temp_diff = abs(np.max(_steel_temperature(**kwargs_steel)[1]) - beam_temperature_max_goal)
             return max_temp_diff
 
-        protection_thickness_ = newton(helper_func, 0.01, tol=beam_temperature_max_goal_tolerance)
-        # protection_thickness_ = minimize(helper_func, 0.01)
+        res_min = minimize_scalar(fun=__steel_temperature,
+                                  method="golden",
+                                  bracket=(1e-3, 0.1),
+                                  options={"xtol": 1e-3, "maxiter": 20})
+        protection_thickness_ = res_min.x
+        kwargs_steel["thickness_protection"] = protection_thickness_
+        temperature_steel = _steel_temperature(**kwargs_steel)[1]
+        max_temp = np.amax(temperature_steel) - 273.15
 
-    time, temperature_steel, data_all = _steel_temperature(
-            tsec, temps+273.15, beam_rho, beam_c, beam_cross_section_area, protection_k, protection_rho, protection_c, protection_thickness_, protection_protected_perimeter
-    )
+        printd.debug("".join(["-"*37, ("\n{:30}: {:<5}"*5).format("MINIMISE STATUS", str(res_min.success),
+                                                                    "DIFF", res_min.fun,
+                                                                    "N ITER", res_min.nit,
+                                                                    "PROTECTION THICKNESS", protection_thickness_,
+                                                                    "MAXIMUM STEEL TEMPERATURE", max_temp)]))
+    else:
+        protection_thickness_ = protection_thickness
+        time, temperature_steel, data_all = _steel_temperature(**kwargs_steel)
+        max_temp = np.amax(temperature_steel) - 273.15
 
-    max_temp = np.amax(temperature_steel) - 273.15
+
 
     return max_temp, protection_thickness_
 
@@ -248,25 +270,27 @@ def mc_inputs_maker(simulation_count, beam_temperature_max_goal):
 # wrapper to deal with inputs format (dict-> kwargs)
 def worker_with_progress_tracker(arg):
     kwargs, q = arg
-    result = mc_body(**kwargs)
+    result = mc_calculation(**kwargs)
     q.put(kwargs)
     return result
 
 
-def worker(arg): return mc_body(**arg)
+def worker(arg): return mc_calculation(**arg)
 
 
 if __name__ == "__main__":
     # SETTINGS
-    is_track_progress = True
-    time_interval_progress_print = 2
     simulation_count = 1000
-    beam_temperature_max_goal = 873.15  # [K] 0 to disable goal seek
+    progress_print_interval = 2 # [s] 0 to disable progress print
+    beam_temperature_max_goal = 873  # [K] 0 to disable protection thickness adjustment to peak temperature
+    count_process_threads = 3  # 0 to use maximum available processors
+    # go to function mc_inputs_maker to adjust parameters for the monte carlo simulation
 
     # SETTING 2
     output_string_start = "{} - START."
     output_string_progress = "Complete = {:3.0f} %."
     output_string_complete = "{} - COMPLETED IN {:0.1f} SECONDS."
+    random.seed(123)
 
     # make all inputs on the one go
     print(output_string_start.format("GENERATE INPUTS"))
@@ -281,7 +305,7 @@ if __name__ == "__main__":
 
     # implement of mp, with ability to track progress
     time_count_simulation = time.perf_counter()
-    if is_track_progress:
+    if progress_print_interval > 0:
         # Built-in progress tracking feature enable displaying
         m = mp.Manager()
         q = m.Queue()
@@ -294,7 +318,7 @@ if __name__ == "__main__":
                 break
             else:
                 print(output_string_progress.format(q.qsize() * 100 / count_total_simulations))
-                time.sleep(time_interval_progress_print)
+                time.sleep(progress_print_interval)
         results = jobs.get()
     else:
         pool = mp.Pool(os.cpu_count())

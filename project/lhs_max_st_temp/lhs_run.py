@@ -6,7 +6,7 @@ import project.lhs_max_st_temp.ec3_ht as ht
 import project.lhs_max_st_temp.tfm_alt as tfma
 from project.dat.steel_carbon import Thermal
 import matplotlib.pyplot as plt
-from project.lhs_max_st_temp.lhs_run_mp import mc_body
+from project.lhs_max_st_temp.lhs_run_mp import mc_calculation
 
 steel_prop = Thermal()
 c = steel_prop.c()
@@ -140,7 +140,7 @@ for i in range(0,lhs_iterations):
         "protection_protected_perimeter": Hp
     }
 
-    a = mc_body(**dict_inputs)
+    a = mc_calculation(**dict_inputs)
 
 
     fled = qfd_lhs[i]
