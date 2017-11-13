@@ -1,181 +1,253 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+import copy
 
+# def parametric_eurocode1(
+#         total_enclosure_area,
+#         floor_area,
+#         opening_area,
+#         opening_height,
+#         density_boundary,
+#         specific_heat_boundary,
+#         thermal_conductivity_boundary,
+#         fire_load_density_floor,
+#         fire_growth_rate,
+#         time_step=0.1,
+#         time_extend=1800
+# ):
+#     """DESCRIPTION:
+#     Generates the Eurocode parametric fire curve defined in [BS EN 1991-1-2:2002, Annex A]
+#     NOTE:
+#         *   When estimating extinction time, a upper bound value of 12 hours is used for approximation. The current
+#             version is not capable estimating extinction time if it happened greater than 12 hrs. In addition, 1000
+#             loops are set to maximum for goal seek.
+#         *   0.02 <= opening factor <= 0.002
+#         *   100 <= b (thermal inertia) <= 2200
+#     :param total_enclosure_area:            [float][m²]     Total internal surface area, including openings.
+#     :param floor_area:                      [float][m²]     Floor area.
+#     :param opening_area:                    [float][m²]     Vertical open area.
+#     :param opening_height:                  [float][m]      Weighted average vertical openings height.
+#     :param density_boundary:                [float][kg/m³]  Density of enclosure boundary.
+#     :param specific_heat_boundary:          [float][J/kg/K] Specific heat of enclosure.
+#     :param thermal_conductivity_boundary:   [float][W/m/K]  Thermal conductivity of enclosure.
+#     :param fire_load_density_floor:         [float][J/m²]   Fuel load on floor area.
+#     :param fire_growth_rate:                [string][-]     Can be either "low", "medium" or "fast".
+#     :param time_step:                       [float][s]      Time step between each interval.
+#     :param time_extend:                     [float][s]      Time extended after fire extinguished.
+#     :return time:                           [ndarray][K]    Time array incorporating with temperatures.
+#     :return temperature:                    [ndarray][K]    Temperature array incorporating with time.
+#     """
+#
+#     # HELPER FUNCTIONS
+#
+#     def _temperature_heating_phase(time_array_heating, time_peak_temperature, time_limiting, lambda_, lambda_limiting):
+#         if time_peak_temperature == time_limiting:
+#             # (A.2b)
+#             tt = time_array_heating * lambda_limiting
+#         else:
+#             # (A.2a)
+#             tt = time_array_heating * lambda_
+#
+#         return 20 + 1325 * (1 - 0.324 * np.exp(-0.2*tt) - 0.204 * np.exp(-1.7*tt) - 0.472 * np.exp(-19*tt))
+#
+#     def _time_extinction(fire_load_density_total, opening_factor, lambda_, time_peak_temperature, time_limiting, temperature_peak):
+#         tt_max = (
+#                      0.2e-3 * fire_load_density_total / opening_factor) * lambda_  # (A.12) explicitly for cooling phase
+#         if (time_peak_temperature > time_limiting):  # (A.12), explicitly for cooling phase
+#             x = 1.0
+#         elif (time_peak_temperature == time_limiting):
+#             x = time_limiting * lambda_ / tt_max
+#         gas_temperature = temperature_peak
+#
+#         t_ubound = 12 * 3600
+#         t_lbound = time_peak_temperature
+#         t = None
+#
+#         count_loops = 0
+#         while not 19.5 < gas_temperature < 20.5 and count_loops <= 10000:
+#             if t is None:
+#                 t = 0.5 * (t_ubound + t_lbound)
+#             else:
+#                 if gas_temperature > 20:
+#                     t_lbound = t
+#                     t = 0.5 * (t_lbound + t_ubound)
+#                 elif gas_temperature < 20:
+#                     t_ubound = t
+#                     t = 0.5 * (t_lbound + t_ubound)
+#             if tt_max <= 0.5: # (A.11a)
+#                 gas_temperature = temperature_peak - 625 * (t * lambda_ - tt_max * x)
+#             elif 0.5 < tt_max < 2: # (A.11a)
+#                 gas_temperature = temperature_peak - 250 * (3 - tt_max) * (t * lambda_ - tt_max * x)
+#             elif tt_max >= 2: # (A.11a)
+#                 gas_temperature = temperature_peak - 250 * (t * lambda_ - tt_max * x)
+#             count_loops += 1
+#
+#         return t
+#
+#     def _temperature_cooling_phase(time_array_cooling, time_peak_temperature, time_limiting, lambda_, fire_load_density_total, opening_factor, temperature_peak):
+#         tt = time_array_cooling * lambda_  # (A.12), explicitly for cooling phase
+#         ttMax = (0.2e-3 * fire_load_density_total / opening_factor) * lambda_ # (A.12) explicitly for cooling phase
+#         if time_peak_temperature > time_limiting:  # (A.12), explicitly for cooling phase
+#             x = 1.0
+#         elif time_peak_temperature == time_limiting:
+#             x = time_limiting * lambda_ / ttMax
+#         else:
+#             x = None
+#
+#         if ttMax <= 0.5:  # (A.11a)
+#             gas_temperature = temperature_peak - 625 * (tt - ttMax * x)
+#         elif 0.5 < ttMax < 2:  # (A.11a)
+#             gas_temperature = temperature_peak - 250 * (3 - ttMax) * (tt - ttMax * x)
+#         elif ttMax >= 2:  # (A.11a)
+#             gas_temperature = temperature_peak - 250 * (tt - ttMax * x)
+#         else:
+#             gas_temperature = np.zeros(np.shape(tt))
+#
+#         return gas_temperature
+#
+#     # UNITS CONVERSION TO FIT EQUATIONS
+#     time_step /= 3600.  # seconds -> hours
+#     time_extend /= 3600.  # seconds -> hours
+#     fire_load_density_floor /= 1e6  # [J/m2] -> [MJ/m2]
+#     fire_growth_rate /= 20
+#
+#     # DERIVED PROPERTIES
+#
+#     # [BS EN 1991-1-2:2002, Annex A, (10)]
+#     dict_fire_growth = {"slow": 25.0 / 60.0, "medium": 20.0 / 60.0, "fast": 15.0 / 60.0}
+#
+#     # opening_factor = opening_area * np.sqrt(opening_height) / total_enclosure_area
+#     opening_factor = 0.2
+#
+#     # b = np.sqrt(density_boundary * specific_heat_boundary * thermal_conductivity_boundary)
+#     b = 1500
+#
+#     lambda_ = np.power(opening_factor / b, 2) / np.power(0.04 / 1160, 2)
+#
+#     fire_load_density_total = fire_load_density_floor * (floor_area / total_enclosure_area)
+#
+#     # [BS EN 1991-1-2:2002, Annex A, (10)]
+#     if isinstance(fire_growth_rate, str):
+#         time_limiting = dict_fire_growth[fire_growth_rate]
+#     else:
+#         time_limiting = fire_growth_rate
+#
+#     # [BS EN 1991-1-2:2002, Annex A, A.9]
+#     opening_factor_limiting = 0.1e-3 * fire_load_density_total / time_limiting
+#
+#     lambda_limiting = np.power((opening_factor_limiting / b), 2) / np.power(0.04 / 1160, 2)
+#
+#     if opening_factor > 0.04 and fire_load_density_total < 75 and b < 1160:
+#         # (A.10)
+#         lambda_limiting *= \
+#             (1 + ((opening_factor - 0.04) / 0.04) * ((fire_load_density_total - 75) / 75) * ((1160 - b) / 1160))
+#
+#     time_peak_temperature = max([0.2e-3 * fire_load_density_total / opening_factor, time_limiting])
+#
+#     # CALCULATE TIME & TEMPERATURE FOR HEATING PHASE
+#     time_array_heating = np.arange(0, int(time_peak_temperature/time_step)*time_step+time_step, time_step)
+#     temperature_array_heating = _temperature_heating_phase(time_array_heating, time_peak_temperature, time_limiting, lambda_, lambda_limiting)
+#     temperature_peak = max(temperature_array_heating)
+#
+#     # CALCULATE TIME & TEMPERATURE FOR COOLING PHASE
+#     extinguish_time = _time_extinction(fire_load_density_total, opening_factor, lambda_, time_peak_temperature, time_limiting, temperature_peak)
+#     time_array_cooling = np.arange(time_array_heating.max()+time_step, int(extinguish_time/time_step)*time_step+time_step, time_step)
+#     temperature_array_cooling = _temperature_cooling_phase(time_array_cooling, time_peak_temperature, time_limiting, lambda_, fire_load_density_total, opening_factor, temperature_peak)
+#     temperature_array_cooling[temperature_array_cooling < 25] = 25
+#
+#     # EXTEND PHASE
+#     time_array_extend = np.arange(time_array_cooling.max() + time_step, time_array_cooling.max() + time_step + time_extend, time_step)
+#     temperature_array_extend = np.full((np.size(time_array_extend),), 25)
+#
+#     # Assemble array
+#     time = np.concatenate((time_array_heating,time_array_cooling,time_array_extend))
+#     temperature = np.concatenate((temperature_array_heating, temperature_array_cooling, temperature_array_extend))
+#
+#     # Convert time to seconds
+#     time *= 3600
+#     temperature += 273.15
+#
+#     return time, temperature
 
-def parametric_eurocode1(
-        total_enclosure_area,
-        floor_area,
-        opening_area,
-        opening_height,
-        density_boundary,
-        specific_heat_boundary,
-        thermal_conductivity_boundary,
-        fire_load_density_floor,
-        fire_growth_rate,
-        time_step=0.1,
-        time_extend=1800
-):
-    """DESCRIPTION:
-    Generates the Eurocode parametric fire curve defined in [BS EN 1991-1-2:2002, Annex A]
-    NOTE:
-        *   When estimating extinction time, a upper bound value of 12 hours is used for approximation. The current
-            version is not capable estimating extinction time if it happened greater than 12 hrs. In addition, 1000
-            loops are set to maximum for goal seek.
-        *   0.02 <= opening factor <= 0.002
-        *   100 <= b (thermal inertia) <= 2200
-    :param total_enclosure_area:            [float][m²]     Total internal surface area, including openings.
-    :param floor_area:                      [float][m²]     Floor area.
-    :param opening_area:                    [float][m²]     Vertical open area.
-    :param opening_height:                  [float][m]      Weighted average vertical openings height.
-    :param density_boundary:                [float][kg/m³]  Density of enclosure boundary.
-    :param specific_heat_boundary:          [float][J/kg/K] Specific heat of enclosure.
-    :param thermal_conductivity_boundary:   [float][W/m/K]  Thermal conductivity of enclosure.
-    :param fire_load_density_floor:         [float][J/m²]   Fuel load on floor area.
-    :param fire_growth_rate:                [string][-]     Can be either "low", "medium" or "fast".
-    :param time_step:                       [float][s]      Time step between each interval.
-    :param time_extend:                     [float][s]      Time extended after fire extinguished.
-    :return time:                           [ndarray][K]    Time array incorporating with temperatures.
-    :return temperature:                    [ndarray][K]    Temperature array incorporating with time.
-    """
+def parametric_eurocode1():
+    # Jean-Marc Franssen, Paulo Vila Real (2010) - Fire Design of Steel Structures
+    T_max = 0
+    temperature_initial = 0
+    h_eq = 0
+    A_v = 0
+    A_t =0
+    q_fd = 0
+    A_f = 0
+    lambda_ = 0
+    rho = 0
+    c = 0
+    t_lim = 0
 
-    # HELPER FUNCTIONS
+    b = (lambda_ * rho * c) ** 0.5
+    O = A_v * h_eq**0.5 / A_t
+    q_td = q_fd * A_f / A_t
+    Gamma = ((O/0.04)/(b/1160))**2
 
-    def _temperature_heating_phase(time_array_heating, time_peak_temperature, time_limiting, lambda_, lambda_limiting):
-        if time_peak_temperature == time_limiting:
-            # (A.2b)
-            tt = time_array_heating * lambda_limiting
-        else:
-            # (A.2a)
-            tt = time_array_heating * lambda_
+    t_star = Gamma * t
+    t_max = 0.0002*q_td/O
+    t_star_max = Gamma * t_max
 
-        return 20 + 1325 * (1 - 0.324 * np.exp(-0.2*tt) - 0.204 * np.exp(-1.7*tt) - 0.472 * np.exp(-19*tt))
+    # CALCULATION
+    # heating phase, Eq. 3.12
+    T_g = 1325 * (1 - 0.324*np.exp(-0.2*t_star) - 0.204*np.exp(-1.7*t_star) - 0.472*np.exp(-19*t_star))
+    T_g += temperature_initial
 
-    def _time_extinction(fire_load_density_total, opening_factor, lambda_, time_peak_temperature, time_limiting, temperature_peak):
-        tt_max = (
-                     0.2e-3 * fire_load_density_total / opening_factor) * lambda_  # (A.12) explicitly for cooling phase
-        if (time_peak_temperature > time_limiting):  # (A.12), explicitly for cooling phase
-            x = 1.0
-        elif (time_peak_temperature == time_limiting):
-            x = time_limiting * lambda_ / tt_max
-        gas_temperature = temperature_peak
+    # cooling phase, eq. 3.16
+    if t_max >= t_lim:
+        # eq. 3.16
+        if t_star_max <= 0.5:
+            T_g = T_max - 625 * (t_star - t_star_max)
+        elif 0.5 < t_star_max < 2.0:
+            T_g = T_max - 250 * (3 - t_star_max) * (t_star - t_star_max)
+        elif 2.0 <= t_star_max:
+            T_g = T_max - 250 * (t_star - t_star_max)
+    elif t_max < t_lim:
+        O_lim = 0.0001 * q_td / t_lim
+        Gamma_lim = ((O_lim/0.04)/(b/1160))**2
 
-        t_ubound = 12 * 3600
-        t_lbound = time_peak_temperature
-        t = None
+        if O > 0.04 and q_td < 75 and b < 1160:
+            k = 1 + ((O-0.04)/(0.04)) * ((q_td-75)/(75)) * ((1160-b)/(1160))
+            Gamma_lim *= k
+        # todo
+        t_star_ = Gamma_lim * t
+        t_star_max_ = Gamma_lim * t_lim
 
-        count_loops = 0
-        while not 19.5 < gas_temperature < 20.5 and count_loops <= 10000:
-            if t is None:
-                t = 0.5 * (t_ubound + t_lbound)
-            else:
-                if gas_temperature > 20:
-                    t_lbound = t
-                    t = 0.5 * (t_lbound + t_ubound)
-                elif gas_temperature < 20:
-                    t_ubound = t
-                    t = 0.5 * (t_lbound + t_ubound)
-            if tt_max <= 0.5: # (A.11a)
-                gas_temperature = temperature_peak - 625 * (t * lambda_ - tt_max * x)
-            elif 0.5 < tt_max < 2: # (A.11a)
-                gas_temperature = temperature_peak - 250 * (3 - tt_max) * (t * lambda_ - tt_max * x)
-            elif tt_max >= 2: # (A.11a)
-                gas_temperature = temperature_peak - 250 * (t * lambda_ - tt_max * x)
-            count_loops += 1
+        # eq. 3.22
+        if t_star_max <= 0.5:
+            T_g = T_max - 625 * (t_star - Gamma * t_lim)
+        elif 0.5 < t_star_max < 2.0:
+            T_g = T_max - 250 * (3 - t_star) * (t_star - Gamma * t_lim)
+        elif 2.0 <= t_star_max:
+            T_g = T_max - 250 * (t_star - Gamma * t_lim)
 
-        return t
-
-    def _temperature_cooling_phase(time_array_cooling, time_peak_temperature, time_limiting, lambda_, fire_load_density_total, opening_factor, temperature_peak):
-        tt = time_array_cooling * lambda_  # (A.12), explicitly for cooling phase
-        ttMax = (0.2e-3 * fire_load_density_total / opening_factor) * lambda_ # (A.12) explicitly for cooling phase
-        if time_peak_temperature > time_limiting:  # (A.12), explicitly for cooling phase
-            x = 1.0
-        elif time_peak_temperature == time_limiting:
-            x = time_limiting * lambda_ / ttMax
-        else:
-            x = None
-
-        if ttMax <= 0.5:  # (A.11a)
-            gas_temperature = temperature_peak - 625 * (tt - ttMax * x)
-        elif 0.5 < ttMax < 2:  # (A.11a)
-            gas_temperature = temperature_peak - 250 * (3 - ttMax) * (tt - ttMax * x)
-        elif ttMax >= 2:  # (A.11a)
-            gas_temperature = temperature_peak - 250 * (tt - ttMax * x)
-        else:
-            gas_temperature = np.zeros(np.shape(tt))
-
-        return gas_temperature
-
-    # UNITS CONVERSION TO FIT EQUATIONS
-    time_step /= 3600.  # seconds -> hours
-    time_extend /= 3600.  # seconds -> hours
-
-    # DERIVED PROPERTIES
-
-    # [BS EN 1991-1-2:2002, Annex A, (10)]
-    dict_fire_growth = {"slow": 25.0 / 60.0, "medium": 20.0 / 60.0, "fast": 15.0 / 60.0}
-
-    opening_factor = opening_area * np.sqrt(opening_height) / total_enclosure_area
-
-    b = np.sqrt(density_boundary * specific_heat_boundary * thermal_conductivity_boundary)
-
-    lambda_ = np.power(opening_factor / b, 2) / np.power(0.04 / 1160, 2)
-
-    fire_load_density_total = fire_load_density_floor * (floor_area / total_enclosure_area)
-
-    # [BS EN 1991-1-2:2002, Annex A, (10)]
-    if isinstance(fire_growth_rate, str):
-        time_limiting = dict_fire_growth[fire_growth_rate]
-    else:
-        time_limiting = fire_growth_rate
-
-    # [BS EN 1991-1-2:2002, Annex A, A.9]
-    opening_factor_limiting = 0.1e-3 * fire_load_density_total / time_limiting
-
-    lambda_limiting = np.power((opening_factor_limiting / b), 2) / np.power(0.04 / 1160, 2)
-
-    if opening_factor > 0.04 and fire_load_density_total < 75 and b < 1160:
-        # (A.10)
-        lambda_limiting *= \
-            (1 + ((opening_factor - 0.04) / 0.04) * ((fire_load_density_total - 75) / 75) * ((1160 - b) / 1160))
-
-    time_peak_temperature = max([0.2e-3 * fire_load_density_total / opening_factor, time_limiting])
-
-    # CALCULATE TIME & TEMPERATURE FOR HEATING PHASE
-    time_array_heating = np.arange(0, int(time_peak_temperature/time_step)*time_step+time_step, time_step)
-    temperature_array_heating = _temperature_heating_phase(time_array_heating, time_peak_temperature, time_limiting, lambda_, lambda_limiting)
-    temperature_peak = max(temperature_array_heating)
-
-    # CALCULATE TIME & TEMPERATURE FOR COOLING PHASE
-    extinguish_time = _time_extinction(fire_load_density_total, opening_factor, lambda_, time_peak_temperature, time_limiting, temperature_peak)
-    time_array_cooling = np.arange(time_array_heating.max()+time_step, int(extinguish_time/time_step)*time_step+time_step, time_step)
-    temperature_array_cooling = _temperature_cooling_phase(time_array_cooling, time_peak_temperature, time_limiting, lambda_, fire_load_density_total, opening_factor, temperature_peak)
-    temperature_array_cooling[temperature_array_cooling < 25] = 25
-
-    # EXTEND PHASE
-    time_array_extend = np.arange(time_array_cooling.max() + time_step, time_array_cooling.max() + time_step + time_extend, time_step)
-    temperature_array_extend = np.full((np.size(time_array_extend),), 25)
-
-    # Assemble array
-    time = np.concatenate((time_array_heating,time_array_cooling,time_array_extend))
-    temperature = np.concatenate((temperature_array_heating, temperature_array_cooling, temperature_array_extend))
-
-    # Convert time to seconds
-    time *= 3600
-    temperature += 273.15
-
-    return time, temperature
 
 
 def standard_fire_iso834(
         time,
         temperature_initial
 ):
-    time[time<0] = np.nan
-    time /= 60.  # convert time from second to minute
-    temperature_initial -= 273.15
+    # INPUTS CHECK
+    time = np.array(time, dtype=float)
+    time[time < 0] = np.nan
+
+    # SI UNITS -> EQUATION UNITS
+    temperature_initial -= 273.15  # [K] -> [C]
+    time /= 60.  # [s] - [min]
+
+    # CALCULATE TEMPERATURE BASED ON GIVEN TIME
     temperature = 345. * np.log10(time * 8. + 1.) + temperature_initial
     temperature[temperature == np.nan] = temperature_initial
-    return temperature + 273.15  # convert from celsius to kelvin
+
+    # EQUATION UNITS -> SI UNITS
+    time *= 60.  # [min] -> [s]
+    temperature += 273.15  # [C] -> [K]
+
+    return time, temperature
 
 
 def standard_fire_astm_e119(

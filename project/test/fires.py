@@ -29,20 +29,38 @@ def parametric_fire():
                 time_step=0.1,
                 time_extend=600)
 
-def parametric_fire2():
-    from project.lhs_max_st_temp.ec_param_fire import param_fire as fire
-    return fire(dim1=,
-                dim2=,
-                dim3=,
-                op1dim=,
-                op2dim=,
-                per_op=,
-                qfd=,
-                tlim=,
-                b=,
-                duration=,
-                dt=)
+
+# def parametric_fire2():
+#     from project.lhs_max_st_temp.ec_param_fire import param_fire as fire
+#     return fire(dim1=,
+#                 dim2=,
+#                 dim3=,
+#                 op1dim=,
+#                 op2dim=,
+#                 per_op=,
+#                 qfd=,
+#                 tlim=,
+#                 b=,
+#                 duration=,
+#                 dt=)
 
 
-plt.plot(time, temperature)
-plt.show()
+def parametric_fire3():
+    from project.func.temperature_fires import parametric_eurocode1 as fire
+    return fire(total_enclosure_area=360,
+                floor_area=100,
+                opening_area=None,
+                opening_height=None,
+                density_boundary=None,
+                specific_heat_boundary=None,
+                thermal_conductivity_boundary=None,
+                fire_load_density_floor=600e6,
+                fire_growth_rate=20*60,
+                time_step=30,
+                time_extend=600)
+
+
+if __name__ == "__main__":
+    a,b = parametric_fire3()
+    plt.plot(a,b)
+    plt.show()

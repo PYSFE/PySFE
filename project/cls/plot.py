@@ -14,6 +14,7 @@ from inspect import currentframe, getframeinfo  # for error handling, get curren
 import csv
 import os
 
+
 class Scatter2D(object):
     def __init__(self):
         self.figure = plt.figure()
@@ -88,7 +89,6 @@ class Scatter2D(object):
 
         axis_tick_width = .5 if 'axis_tick_width' not in kwargs else kwargs['axis_tick_width']
         axis_tick_length = 2.5 if 'axis_tick_length' not in kwargs else kwargs['axis_tick_length']
-
 
         self.axes[0].set_xlim(axis_lim_x)
         self.axes[0].set_ylim(axis_lim_y1)
