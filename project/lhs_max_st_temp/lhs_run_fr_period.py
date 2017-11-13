@@ -1,12 +1,11 @@
 from pyDOE import *
-from scipy.stats.distributions import norm, gumbel_r, gumbel_l
+from scipy.stats.distributions import norm, gumbel_r
 import numpy as np
 import project.lhs_max_st_temp.ec_param_fire as pf
 import project.lhs_max_st_temp.ec3_ht as ht
 import project.lhs_max_st_temp.tfm_alt as tfma
 from project.dat.steel_carbon import Thermal
 import matplotlib.pyplot as plt
-from project.lhs_max_st_temp.lhs_run_mp import mc_calculation
 from scipy.interpolate import interp1d
 import random
 
@@ -35,7 +34,7 @@ def get_max_st_temp(tsec,temps,rho,c,Ap,kp,rhop,cp,dp,Hp):
 
 #   Define the inputs
 
-lhs_iterations = 1000
+lhs_iterations = 100
 
 #   Compartment dimensions
 
@@ -49,7 +48,7 @@ win_height = 2.33
 
 t_start = 0
 limit_time = 0.333
-inertia = np.sqrt(0.12*600*1500)
+inertia = 720
 fire_dur = 18000
 time_step = 30
 hrr_pua = 0.25
@@ -114,6 +113,10 @@ beam_lhs = linear_dist(beam_min, beam_max, rnd_array_3) * depth
 spread_lhs = linear_dist(spread_min, spread_max, rnd_array_5)
 nft_lhs = norm(loc=avg_nft, scale=std_nft).ppf(rnd_array_6)
 
+#   Create standard fire array
+t_sfc = np.arange(0,18010,10)
+gas_sfc = standard_fire(t_sfc)
+
 #   initialise output arrays
 peak_st_fract = []
 peak_st_temp = []
@@ -147,8 +150,6 @@ for i in range(0,lhs_iterations):
         "protection_depth":             dp,
         "protection_protected_perimeter": Hp
     }
-
-    a = mc_calculation(**dict_inputs)
 
 
     fled = qfd_lhs[i]
@@ -217,7 +218,6 @@ for i in range(0,lhs_iterations):
 
     while abserr > ok_error_c:
         dp_iter = dp_iter + 1
-        print(dp_iter)
         dp3 = (dp1 + dp2) * 0.5
         max_temp, steelt = get_max_st_temp(tsec,temps,rho,c,Ap,kp,rhop,cp,dp3,Hp)
         tmp_err = max_temp - target_tem
@@ -235,32 +235,22 @@ for i in range(0,lhs_iterations):
         abserr = np.abs(max_temp - target_tem)
 
     #   Create output arrays
+
     st_fract = ((i+1) / lhs_iterations)
     peak_st_temp.append(max_temp)
     peak_st_fract.append(st_fract)
-    dp_sol.append(dp3)
+    if dp3 > 0.05:
+        dp3 = 0.05
+    max_temp_sfc, steelt_sfc = get_max_st_temp(t_sfc, gas_sfc, rho, c, Ap, kp, rhop, cp, dp3, Hp)
+    fr_ind = interp1d(steelt_sfc, t_sfc)
+    fr_per = fr_ind(target_tem)
+    fr_out.append(fr_per / 60)
+
+    print("FR =", fr_per/60, "Qfd =", fled, "Opening size =", win_height, "x", win_width * open_frac, fmstr)
 
 #   Sort output array at the end to get CPD of steel temperatures
 
-peak_st_temp = np.sort(peak_st_temp)
-dp_sol = np.sort(dp_sol)
-dp_sol[dp_sol > 0.05] = 0.05
-
-# Return FR period
-
-t_sfc = np.arange(0,18010,10)
-print(t_sfc)
-gas_sfc = standard_fire(t_sfc)
-print(gas_sfc)
-
-for j, step in enumerate(dp_sol):
-    print("j =", j)
-    dp3 = dp_sol[j]
-    print(dp3)
-    max_temp_sfc, steelt_sfc = get_max_st_temp(t_sfc,gas_sfc,rho,c,Ap,kp,rhop,cp,dp3,Hp)
-    fr_ind = interp1d(steelt_sfc, t_sfc)
-    fr_per = fr_ind(target_tem)
-    fr_out.append(fr_per/60)
+fr_out = np.sort(fr_out)
 
 #   Write to csv
 
