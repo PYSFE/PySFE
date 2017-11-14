@@ -77,4 +77,4 @@ def parametric_fire():
 
 
 if __name__ == "__main__":
-    a = parametric_fire()
+    parametric_fire()
