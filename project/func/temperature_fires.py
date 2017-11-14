@@ -173,8 +173,9 @@ import logging
 logging.basicConfig(filename="log.txt", level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
-def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time_end=7200, time_step=1, time_start=0, temperature_initial=293.15):
-    """
+def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time_end=7200, time_step=1, time_start=0, time_padding = (0, 0),temperature_initial=293.15):
+    """Function Description: (SI UNITS ONLY)
+    This function calculates the time-temperature curve according to Eurocode 1 part 1-2, Appendix A.
     :param A_t:
     :param A_f:
     :param A_v:
@@ -187,6 +188,7 @@ def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time
     :param time_end:
     :param time_step:
     :param time_start:
+    :param time_padding:
     :param temperature_initial:
     :return t:
     :return T_g:
@@ -211,10 +213,12 @@ def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time
 
     t_max = 0.0002*q_td/O
 
-    # CALCULATION
+    # check criteria
+    if not 50 <= q_td <= 1000: log.warning("q_td = {:4.1f} not in range [50, 1000]".format(q_td))
 
+    # CALCULATION
     def _temperature_heating(t_star, temperature_initial):
-        # heating phase, Eq. 3.12
+        # eq. 3.12
         T_g = 1325 * (1 - 0.324*np.exp(-0.2*t_star) - 0.204*np.exp(-1.7*t_star) - 0.472*np.exp(-19*t_star))
         T_g += temperature_initial
         return T_g
@@ -235,7 +239,7 @@ def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time
         if t_star_max <= 0.5:
             T_g = T_max - 625 * (t_star - Gamma * t_lim)
         elif 0.5 < t_star_max < 2.0:
-            T_g = T_max - 250 * (3 - t_star) * (t_star - Gamma * t_lim)
+            T_g = T_max - 250 * (3 - t_star_max) * (t_star - Gamma * t_lim)
         elif 2.0 <= t_star_max:
             T_g = T_max - 250 * (t_star - Gamma * t_lim)
         else: T_g = np.nan
@@ -258,23 +262,24 @@ def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time
         t_star_max_ = Gamma_lim * t_lim
         return t_star_, t_star_max_
 
-
     t_star, t_star_max = _variables(t, Gamma, t_max)
 
     if t_max >= t_lim:  # ventilation controlled fire
         T_max = _temperature_heating(t_star_max, temperature_initial)
         T_heating_g = _temperature_heating(Gamma * t, temperature_initial)
         T_cooling_g = _temperature_cooling_vent(t_star_max, T_max, t_star)
-        pass
+        fire_type = "ventilation controlled"
     else:  # fuel controlled fire
         t_star_, t_star_max_ = _variables_2(t, t_lim, q_td, b, O)
         T_max = _temperature_heating(t_star_max_, temperature_initial)
         T_heating_g = _temperature_heating(t_star_, temperature_initial)
         T_cooling_g = _temperature_cooling_fuel(t_star_max, T_max, t_star, Gamma, t_lim)
+        fire_type = "fuel controlled"
 
-    log.debug("d")
     T_g = np.minimum(T_heating_g, T_cooling_g)
     T_g[T_g<0] = 0
+
+    data_all = {"fire_type": fire_type}
 
     # UNITS: Eq. -> SI
     t *= 3600
