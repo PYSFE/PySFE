@@ -17,17 +17,20 @@ def travelling_fire():
 
 def parametric_fire():
     from project.func.temperature_fires import parametric_eurocode1 as fire
-    return fire(total_enclosure_area=2205.348,
-                floor_area=853.187,
-                opening_area=105.684078931808,
-                opening_height=2,
-                density_boundary=600,
-                specific_heat_boundary=5425.347,
-                thermal_conductivity_boundary=0.12,
-                fire_load_density_floor=430.108,
-                fire_growth_rate=20*60,
-                time_step=0.1,
-                time_extend=600)
+    return fire(A_t=360,
+         A_f=100,
+         A_v=72,
+         h_eq=1,
+         q_fd=600e6,
+         lambda_=1,
+         rho=1,
+         c=2250000,
+         t_lim=20*60,
+         time_end=2*60*60,
+         time_step=1,
+         time_start=0,
+         temperature_initial=293.15)
+
 
 
 # def parametric_fire2():
@@ -45,22 +48,23 @@ def parametric_fire():
 #                 dt=)
 
 
-def parametric_fire3():
-    from project.func.temperature_fires import parametric_eurocode1 as fire
-    return fire(total_enclosure_area=360,
-                floor_area=100,
-                opening_area=None,
-                opening_height=None,
-                density_boundary=None,
-                specific_heat_boundary=None,
-                thermal_conductivity_boundary=None,
-                fire_load_density_floor=600e6,
-                fire_growth_rate=20*60,
-                time_step=30,
-                time_extend=600)
+# def parametric_fire3():
+#     from project.func.temperature_fires import parametric_eurocode1 as fire
+#     return fire(total_enclosure_area=360,
+#                 floor_area=100,
+#                 opening_area=None,
+#                 opening_height=None,
+#                 density_boundary=None,
+#                 specific_heat_boundary=None,
+#                 thermal_conductivity_boundary=None,
+#                 fire_load_density_floor=600e6,
+#                 fire_growth_rate=20*60,
+#                 time_step=30,
+#                 time_extend=600)
 
 
 if __name__ == "__main__":
-    a,b = parametric_fire3()
-    plt.plot(a,b)
+    a, b = parametric_fire()
+    plt.plot(a/60,b-273.15)
+    plt.xlim([0,40])
     plt.show()

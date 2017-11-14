@@ -169,36 +169,57 @@ import copy
 #
 #     return time, temperature
 
-def parametric_eurocode1():
-    # Jean-Marc Franssen, Paulo Vila Real (2010) - Fire Design of Steel Structures
-    T_max = 0
-    temperature_initial = 0
-    h_eq = 0
-    A_v = 0
-    A_t =0
-    q_fd = 0
-    A_f = 0
-    lambda_ = 0
-    rho = 0
-    c = 0
-    t_lim = 0
+import logging
+logging.basicConfig(filename="log.txt", level=logging.DEBUG)
+log = logging.getLogger(__name__)
+
+def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time_end=7200, time_step=1, time_start=0, temperature_initial=293.15):
+    """
+    :param A_t:
+    :param A_f:
+    :param A_v:
+    :param h_eq:
+    :param q_fd:
+    :param lambda_:
+    :param rho:
+    :param c:
+    :param t_lim:
+    :param time_end:
+    :param time_step:
+    :param time_start:
+    :param temperature_initial:
+    :return t:
+    :return T_g:
+    """
+    # Reference: Eurocode 1991-1-2; Jean-Marc Franssen, Paulo Vila Real (2010) - Fire Design of Steel Structures
+
+    # UNITS: SI -> Equations
+    q_fd /= 1e6  # [J/m2] -> [MJ/m2]
+    t_lim /= 3600  # [s] -> [min]
+    time_end /= 3600  # [s] -> [hr]
+    time_step /= 3600  # [s] -> [hr]
+    time_start /= 3600  # [s] -> [hr]
+    temperature_initial -= 273.15  # [K] -> [C]
+
+    # ACQUIRING REQUIRED VARIABLES
+    t = np.arange(time_start, time_end, time_step, dtype=float)
 
     b = (lambda_ * rho * c) ** 0.5
     O = A_v * h_eq**0.5 / A_t
     q_td = q_fd * A_f / A_t
     Gamma = ((O/0.04)/(b/1160))**2
 
-    t_star = Gamma * t
     t_max = 0.0002*q_td/O
-    t_star_max = Gamma * t_max
 
     # CALCULATION
-    # heating phase, Eq. 3.12
-    T_g = 1325 * (1 - 0.324*np.exp(-0.2*t_star) - 0.204*np.exp(-1.7*t_star) - 0.472*np.exp(-19*t_star))
-    T_g += temperature_initial
 
-    # cooling phase, eq. 3.16
-    if t_max >= t_lim:
+    def _temperature_heating(t_star, temperature_initial):
+        # heating phase, Eq. 3.12
+        T_g = 1325 * (1 - 0.324*np.exp(-0.2*t_star) - 0.204*np.exp(-1.7*t_star) - 0.472*np.exp(-19*t_star))
+        T_g += temperature_initial
+        return T_g
+
+    def _temperature_cooling_vent(t_star_max, T_max, t_star):  # ventilation controlled
         # eq. 3.16
         if t_star_max <= 0.5:
             T_g = T_max - 625 * (t_star - t_star_max)
@@ -206,17 +227,10 @@ def parametric_eurocode1():
             T_g = T_max - 250 * (3 - t_star_max) * (t_star - t_star_max)
         elif 2.0 <= t_star_max:
             T_g = T_max - 250 * (t_star - t_star_max)
-    elif t_max < t_lim:
-        O_lim = 0.0001 * q_td / t_lim
-        Gamma_lim = ((O_lim/0.04)/(b/1160))**2
+        else: T_g = np.nan
+        return T_g
 
-        if O > 0.04 and q_td < 75 and b < 1160:
-            k = 1 + ((O-0.04)/(0.04)) * ((q_td-75)/(75)) * ((1160-b)/(1160))
-            Gamma_lim *= k
-        # todo
-        t_star_ = Gamma_lim * t
-        t_star_max_ = Gamma_lim * t_lim
-
+    def _temperature_cooling_fuel(t_star_max, T_max, t_star, Gamma, t_lim):  # fuel controlled
         # eq. 3.22
         if t_star_max <= 0.5:
             T_g = T_max - 625 * (t_star - Gamma * t_lim)
@@ -224,7 +238,49 @@ def parametric_eurocode1():
             T_g = T_max - 250 * (3 - t_star) * (t_star - Gamma * t_lim)
         elif 2.0 <= t_star_max:
             T_g = T_max - 250 * (t_star - Gamma * t_lim)
+        else: T_g = np.nan
+        return T_g
 
+    def _variables(t, Gamma, t_max):
+        t_star = Gamma * t
+        t_star_max = Gamma * t_max
+        return t_star, t_star_max
+
+    def _variables_2(t, t_lim, q_td, b, O):
+        O_lim = 0.0001 * q_td / t_lim
+        Gamma_lim = ((O_lim/0.04)/(b/1160))**2
+
+        if O > 0.04 and q_td < 75 and b < 1160:
+            k = 1 + ((O-0.04)/(0.04)) * ((q_td-75)/(75)) * ((1160-b)/(1160))
+            Gamma_lim *= k
+
+        t_star_ = Gamma_lim * t
+        t_star_max_ = Gamma_lim * t_lim
+        return t_star_, t_star_max_
+
+
+    t_star, t_star_max = _variables(t, Gamma, t_max)
+
+    if t_max >= t_lim:  # ventilation controlled fire
+        T_max = _temperature_heating(t_star_max, temperature_initial)
+        T_heating_g = _temperature_heating(Gamma * t, temperature_initial)
+        T_cooling_g = _temperature_cooling_vent(t_star_max, T_max, t_star)
+        pass
+    else:  # fuel controlled fire
+        t_star_, t_star_max_ = _variables_2(t, t_lim, q_td, b, O)
+        T_max = _temperature_heating(t_star_max_, temperature_initial)
+        T_heating_g = _temperature_heating(t_star_, temperature_initial)
+        T_cooling_g = _temperature_cooling_fuel(t_star_max, T_max, t_star, Gamma, t_lim)
+
+    log.debug("d")
+    T_g = np.minimum(T_heating_g, T_cooling_g)
+    T_g[T_g<0] = 0
+
+    # UNITS: Eq. -> SI
+    t *= 3600
+    T_g += 273.15
+
+    return t, T_g
 
 
 def standard_fire_iso834(
