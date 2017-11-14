@@ -16,6 +16,8 @@ import copy
 import logging
 from project.func.temperature_fires import standard_fire_iso834
 from scipy.interpolate import interp1d
+from project.func.temperature_fires import parametric_eurocode1 as _fire_param
+
 
 logging.basicConfig(filename="log.txt", level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -23,6 +25,118 @@ log.setLevel(logging.DEBUG)
 
 
 def mc_calculation(
+        time_step,
+        time_start,
+        time_limiting,
+        window_height,
+        window_width,
+        window_open_fraction,
+        room_breadth,
+        room_depth,
+        room_height,
+        room_wall_thermal_inertia,
+        fire_load_density,
+        fire_hrr_density,
+        fire_spread_speed,
+        fire_duration,
+        beam_position,
+        beam_rho,
+        beam_c,
+        beam_cross_section_area,
+        protection_k,
+        protection_rho,
+        protection_c,
+        protection_thickness,
+        protection_protected_perimeter,
+        temperature_max_near_field=1200,
+        index=-1,
+):
+
+    #   Check on applicable fire curve
+    window_area = window_height * window_width * window_open_fraction
+    room_floor_area = room_breadth * room_depth
+    room_area = (2 * room_floor_area) + ((room_breadth + room_depth) * 2 * room_height)
+
+    #   Opening factor - is it within EC limits?
+    opening_factor = pf.opening_factor(window_area, window_height, room_area)
+
+    #   Spread speed - Does the fire spread to involve the full compartment?
+    sp_time = max([room_depth, room_breadth]) / fire_spread_speed
+    burnout_m2 = max([fire_load_density / fire_hrr_density, 900.])
+
+    inputs_parametric_fire = {"A_t": room_area,
+                              "A_f": room_floor_area,
+                              "A_v": window_area,
+                              "h_eq": window_height,
+                              "q_fd": fire_load_density * 1e6,
+                              "lambda_": room_wall_thermal_inertia**2,
+                              "rho": 1,
+                              "c": 1,
+                              "t_lim": time_limiting,
+                              "time_end": fire_duration,
+                              "time_step": time_step,
+                              "time_start": time_start,
+                              # "time_padding": (0, 0),
+                              "temperature_initial": 20+273.15,}
+
+    if sp_time < burnout_m2 and 0.02 < opening_factor <= 0.2:  # If fire spreads throughout compartment and ventilation is within EC limits = Parametric fire
+        #   Get parametric fire curve
+        # tsec_, tmin_, temps_ = pf.param_fire(room_breadth, room_depth, room_height, window_width, window_height,
+        #                                   window_open_fraction, fire_load_density, time_limiting,
+        #                                   room_wall_thermal_inertia, fire_duration,
+        #                                   time_step)
+        tsec, temps = _fire_param(**inputs_parametric_fire)
+        
+        fire_type = "Parametric"
+
+    else:  # Otherwise, it is a travelling fire
+        #   Get travelling fire curve
+        tsec, temps, heat_release, distance_to_element = tfma.travelling_fire(
+            fire_load_density,
+            fire_hrr_density,
+            room_depth,
+            room_breadth,
+            fire_spread_speed,
+            room_height,
+            beam_position,
+            time_start,
+            fire_duration,
+            time_step,
+            temperature_max_near_field,
+            window_width,
+            window_height,
+            window_open_fraction
+        )
+        temps += 273.15
+        fire_type = "Travelling"
+
+    # print("LHS_model_realisation_count =", i + 1, "Of", lhs_iterations)
+
+    #   Optional unprotected steel code
+    # tempsteel, temprate, hf, c_s = ht. make_temperature_eurocode_unprotected_steel(tsec,temps+273.15,Hp,beam_cross_section_area,0.1,7850,beam_c,35,0.625)
+    # tempsteel -= 273.15
+    # max_temp = np.amax(tempsteel)
+
+    # Solve heat transfer using EC3 correlations
+    # SI UNITS FOR INPUTS!
+    inputs_steel_heat_transfer = {
+        "time": tsec,
+        "temperature_ambient": temps,
+        "rho_steel_T": beam_rho,
+        "c_steel_T": beam_c,
+        "area_steel_section": beam_cross_section_area,
+        "k_protection": protection_k,
+        "rho_protection": protection_rho,
+        "c_protection": protection_c,
+        "thickness_protection": protection_thickness,
+        "perimeter_protected": protection_protected_perimeter,
+    }
+    max_temp = np.max(_steel_temperature(**inputs_steel_heat_transfer)[1])
+
+    return max_temp
+
+
+def mc_calculation_fr(
         time_step,
         time_start,
         time_limiting,
@@ -172,7 +286,7 @@ def mc_calculation(
     return max_temp, kwargs_steel["thickness_protection"], time_equivalence
 
 
-def mc_inputs_generator(simulation_count, beam_temperature_max_goal, is_time_equivalence):
+def mc_inputs_generator(simulation_count, dict_extra_inputs=None):
     steel_prop = Thermal()
 
     #   Handy interim functions
@@ -213,12 +327,8 @@ def mc_inputs_generator(simulation_count, beam_temperature_max_goal, is_time_equ
     x["protection_rho"] = 800  # Density of protection [kg/cb.m]
     x["protection_c"] = 1700  # Specific heat of protection [J/kg.K]
 
-    x["beam_temperature_max_goal"] = beam_temperature_max_goal
-
-    if is_time_equivalence:
-        x["dict_time_equivalence"] = {"fire_time": standard_fire[0],
-                                      "fire_temperature": standard_fire[1],
-                                      "steel_match_temperature": "peak",}
+    if dict_extra_inputs is not None:
+        x.update(dict_extra_inputs)
 
     #   Set distribution mean and standard dev
 

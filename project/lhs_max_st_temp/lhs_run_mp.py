@@ -6,7 +6,7 @@ import multiprocessing as mp
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from project.lhs_max_st_temp._lhs_mp_func import mc_calculation, mc_inputs_generator
+from project.lhs_max_st_temp.func import mc_calculation, mc_inputs_generator
 
 
 # wrapper to deal with inputs format (dict-> kwargs)
