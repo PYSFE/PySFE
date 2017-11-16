@@ -38,8 +38,8 @@ lhs_iterations = 100
 
 #   Compartment dimensions
 
-breadth = 12
-depth = 6
+breadth = 6
+depth = 12
 height = 2.78
 win_width = 7.1
 win_height = 2.33
@@ -124,33 +124,6 @@ dp_sol = []
 fr_out = []
 
 for i in range(0,lhs_iterations):
-    dict_inputs = {
-        "window_height":                win_height,
-        "window_width":                 win_width,
-        "window_open_fraction":         glaz_lhs[i],
-        "room_breadth":                 breadth,
-        "room_depth":                   depth,
-        "room_height":                  height,
-        "fire_load_density":            qfd_lhs[i],
-        "fire_hrr_density":             hrr_pua,
-        "fire_spread_speed":            spread_lhs[i],
-        "time_limiting":                limit_time,
-        "room_wall_thermal_inertia":    inertia,
-        "fire_duration":                fire_dur,
-        "time_step":                    time_step,
-        "beam_position":                beam_lhs[i],
-        "time_start":                   t_start,
-        "temperature_max_near_field":   min([nft_lhs[i],1200]),
-        "beam_rho":                     rho,
-        "beam_c":                       c,
-        "beam_cross_section_area":      Ap,
-        "protection_k":                 kp,
-        "protection_rho":               rhop,
-        "protection_c":                 cp,
-        "protection_depth":             dp,
-        "protection_protected_perimeter": Hp
-    }
-
 
     fled = qfd_lhs[i]
     open_frac = glaz_lhs[i]
@@ -200,6 +173,7 @@ for i in range(0,lhs_iterations):
         fmstr = "Travelling"
 
     print("LHS_model_realisation_count =", i + 1, "Of", lhs_iterations)
+    print("Qfd =", fled, "Opening size =", win_height, "x", win_width * open_frac, fmstr)
 
     #   Optional unprotected steel code
     #tempsteel, temprate, hf, c_s = ht. make_temperature_eurocode_unprotected_steel(tsec,temps+273.15,Hp,Ap,0.1,7850,c,35,0.625)
@@ -207,7 +181,7 @@ for i in range(0,lhs_iterations):
     #max_temp = np.amax(tempsteel)
 
     #   Solve heat transfer using EC3 correlations
-    dp1 = 0.001
+    dp1 = 0.0001
     dp2 = 0.091 + random.random()*0.01
     target_tem = 620    #   Set target limiting temperature
     ok_error_c = 2      #   Set convergence tolerance
@@ -217,6 +191,7 @@ for i in range(0,lhs_iterations):
     # Search routine to find dp that corresponds with target limiting temperature
 
     while abserr > ok_error_c:
+        print("Iterations =", dp_iter)
         dp_iter = dp_iter + 1
         dp3 = (dp1 + dp2) * 0.5
         max_temp, steelt = get_max_st_temp(tsec,temps,rho,c,Ap,kp,rhop,cp,dp3,Hp)
@@ -246,7 +221,7 @@ for i in range(0,lhs_iterations):
     fr_per = fr_ind(target_tem)
     fr_out.append(fr_per / 60)
 
-    print("FR =", fr_per/60, "Qfd =", fled, "Opening size =", win_height, "x", win_width * open_frac, fmstr)
+    print("FR =", fr_per/60)
 
 #   Sort output array at the end to get CPD of steel temperatures
 

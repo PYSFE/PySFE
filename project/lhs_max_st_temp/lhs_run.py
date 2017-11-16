@@ -29,7 +29,7 @@ def get_max_st_temp(tsec,temps,rho,c,Ap,kp,rhop,cp,dp,Hp):
 
 #   Define the inputs
 
-lhs_iterations = 100
+lhs_iterations = 10
 
 #   Compartment dimensions
 
