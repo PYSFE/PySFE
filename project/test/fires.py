@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import copy
 
+
 def travelling_fire():
     from project.func.temperature_fires import travelling_fire as fire
     time, temperature, data = fire(
@@ -75,6 +76,16 @@ def parametric_fire():
 #                 time_step=30,
 #                 time_extend=600)
 
+def protected_steel_eurocode():
+    from project.func.temperature_fires import standard_fire_iso834 as fire
+    from project.func.temperature_steel_section import protected_steel_eurocode as steel
+    import numpy as np
+    t = np.arange(0,2*60*60,20)
+    T_g = fire(t, 20+273.15)
+    import matplotlib.pyplot as plt
+    plt.plot(t, T_g)
+
 
 if __name__ == "__main__":
-    parametric_fire()
+    # parametric_fire()
+    protected_steel_eurocode()

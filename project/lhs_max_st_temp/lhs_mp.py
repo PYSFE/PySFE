@@ -1,5 +1,5 @@
+# -*- coding: utf-8 -*-
 import os
-import random
 import time
 import multiprocessing as mp
 import numpy as np
@@ -16,13 +16,10 @@ def worker_with_progress_tracker(arg):
     return result
 
 
-def worker(arg): return mc_calculation(**arg)
-
-
 if __name__ == "__main__":
     # SETTINGS
     simulation_count = 1000
-    progress_print_interval = 5  # [s]
+    progress_print_interval = 0  # [s]
     count_process_threads = 0  # 0 to use maximum available processors
     # NOTE: go to function mc_inputs_maker to adjust parameters for the monte carlo simulation
 
@@ -39,16 +36,16 @@ if __name__ == "__main__":
     p = mp.Pool(os.cpu_count())
     jobs = p.map_async(worker_with_progress_tracker, [(kwargs, q) for kwargs in list_kwargs])
     count_total_simulations = len(list_kwargs)
-    while True:
+    while progress_print_interval:
         if jobs.ready():
-            print("SIMULATION COMPLETED {:3.0f} %...".format(100))
+            print("SIMULATION COMPLETED {:3.0f} %".format(100))
             break
         else:
             print("SIMULATION COMPLETED {:3.0f} %...".format(q.qsize() * 100 / count_total_simulations))
             time.sleep(progress_print_interval)
     results = jobs.get()
     time_count_simulation = time.perf_counter() - time_count_simulation
-    print("SIMULATION COMPLETED IN {:0.3f} SECONDS".format(time_count_simulation))
+    print("SIMULATION COMPLETED IN {:0.3f} SECONDS".format(time_count_simulation, progress_print_interval))
 
     # POST PROCESS
     # format outputs
@@ -56,11 +53,12 @@ if __name__ == "__main__":
     temperature_max_steel = results
     temperature_max_steel = np.sort(temperature_max_steel)
     percentile = np.arange(1, simulation_count + 1) / simulation_count
-    pf_outputs = pd.DataFrame({"PERCENTILE [%]": percentile,
-                               "PEAK STEEL TEMPERATURE [C]": temperature_max_steel-273.15,})
+    df_outputs = pd.DataFrame({"PERCENTILE [%]": percentile,
+                               "PEAK STEEL TEMPERATURE [C]": temperature_max_steel-273.15, })
+    df_outputs = df_outputs[["PERCENTILE [%]", "PEAK STEEL TEMPERATURE [C]"]]
 
     # write outputs to csv
-    pf_outputs.to_csv("output.csv", index=False)
+    df_outputs.to_csv("output.csv", index=False)
 
     # plot outputs
     plt.figure(1)

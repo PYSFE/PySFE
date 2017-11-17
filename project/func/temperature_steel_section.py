@@ -75,7 +75,8 @@ def protected_steel_eurocode(
         rho_protection,
         c_protection,
         thickness_protection,
-        perimeter_protected
+        perimeter_protected,
+        is_terminate_peak_steel_temperature=False
 ):
     """
     SI UNITS!
@@ -142,6 +143,14 @@ def protected_steel_eurocode(
         elif temperature_steel[i] > T_range_u:
             temperature_steel[i] = T_range_u
             temperature_rate_steel[i] = (temperature_steel[i] - temperature_steel[i-1]) / d
+
+        if is_terminate_peak_steel_temperature and temperature_rate_steel[i] < 0:
+            data_all = {"time [s]": time,
+                        "temperature fire [K]": temperature_ambient,
+                        "temperature steel [K]": temperature_steel,
+                        "temperature rate steel [K/s]": temperature_rate_steel,
+                        "specific heat steel [J/kg/K]": specific_heat_steel}
+            return time, temperature_steel, data_all
 
     data_all = {
         "time [s]": time,

@@ -173,6 +173,7 @@ import logging
 logging.basicConfig(filename="log.txt", level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
+
 def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time_end=7200, time_step=1, time_start=0, time_padding = (0, 0),temperature_initial=293.15):
     """Function Description: (SI UNITS ONLY)
     This function calculates the time-temperature curve according to Eurocode 1 part 1-2, Appendix A.
