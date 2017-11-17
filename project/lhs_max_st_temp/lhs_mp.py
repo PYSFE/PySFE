@@ -19,7 +19,7 @@ def worker_with_progress_tracker(arg):
 if __name__ == "__main__":
     # SETTINGS
     simulation_count = 1000
-    progress_print_interval = 0  # [s]
+    progress_print_interval = 5  # [s]
     count_process_threads = 0  # 0 to use maximum available processors
     # NOTE: go to function mc_inputs_maker to adjust parameters for the monte carlo simulation
 
@@ -38,7 +38,6 @@ if __name__ == "__main__":
     count_total_simulations = len(list_kwargs)
     while progress_print_interval:
         if jobs.ready():
-            print("SIMULATION COMPLETED {:3.0f} %".format(100))
             break
         else:
             print("SIMULATION COMPLETED {:3.0f} %...".format(q.qsize() * 100 / count_total_simulations))

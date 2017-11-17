@@ -17,6 +17,7 @@ import logging
 from project.func.temperature_fires import standard_fire_iso834
 from scipy.interpolate import interp1d
 from project.func.temperature_fires import parametric_eurocode1 as _fire_param
+from project.func.kwargs_from_text import kwargs_from_text
 
 
 logging.basicConfig(filename="log.txt", level=logging.DEBUG)
@@ -249,10 +250,10 @@ def mc_fr_calculation(
 
     # MATCH PEAK STEEL TEMPERATURE BY ADJUSTING PROTECTION LAYER THICKNESS
     # todo: if seeking unsuccessful?
-    seek_max_iter = 20  # move to input
-    seek_ubound = 0.02  # move to input
-    seek_lbound = 0.0001  # move to input
-    seet_tol_y = 0.5  # move to inputs
+    seek_max_iter = 20  # todo: move to input
+    seek_ubound = 0.02  # todo: move to input
+    seek_lbound = 0.0001  # todo: move to input
+    seet_tol_y = 0.5  # todo: move to inputs
     seek_count_iter = 0
     seek_status = False
     while seek_count_iter < seek_max_iter and seek_status is False:
@@ -295,34 +296,47 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None):
     lhs_iterations = simulation_count
     standard_fire = standard_fire_iso834(np.arange(0, 36000+60, 20), 293.15)
 
-    #   Compartment dimensions all in [m]
     x = dict()
+
+    # Read input variables from external text file
+
+    dir_package = os.path.dirname(os.path.abspath(__file__))
+    dir_input_file = "/".join([dir_package, "inputs_mp.txt"])
+    with open(dir_input_file, "r") as file_inputs:
+        string_inputs = file_inputs.read()
+    dict_inputs = kwargs_from_text(string_inputs)
+    x.update(dict_inputs)
+
+    # Physical properties
 
     x["beam_c"] = steel_prop.c()
     x["beam_rho"] = steel_prop.rho()
-    x["room_breadth"] = 22.4  # Room breadth [m]
-    x["room_depth"] = 44.8  # Room depth [m]
-    x["room_height"] = 3.0  # Room height [m]
-    x["window_width"] = 90  # Window width [m]
-    x["window_height"] = 2.5  # Window height [m]
 
-    #   Deterministic fire inputs
+    #   Compartment dimensions all in [m]
 
-    x["time_start"] = 0  # Start time of simulation [s]
-    x["time_limiting"] = 0.333  # Limiting time for fuel controlled case in EN 1991-1-2 parametric fire [hr]
-    x["room_wall_thermal_inertia"] = 720  # Compartment thermal inertia [J/m2s1/2K]
-    x["fire_duration"] = 18000  # Maximum time in time array [s]
-    x["time_step"] = 30  # Time step used for fire and heat transfer [s]
-    x["fire_hrr_density"] = 0.25  # HRR density [MW/sq.m]
-
-    #   Section properties for heat transfer evaluation
-
-    x["protection_protected_perimeter"] = 2.14  # Heated perimeter [m]
-    x["beam_cross_section_area"] = 0.017  # Cross section area [sq.m]
-    x["protection_thickness"] = 0.0125  # Thickness of protection [m]
-    x["protection_k"] = 0.2  # Protection conductivity [W/m.K]
-    x["protection_rho"] = 800  # Density of protection [kg/cb.m]
-    x["protection_c"] = 1700  # Specific heat of protection [J/kg.K]
+    # x["room_breadth"] = 22.4  # Room breadth [m]
+    # x["room_depth"] = 44.8  # Room depth [m]
+    # x["room_height"] = 3.0  # Room height [m]
+    # x["window_width"] = 90  # Window width [m]
+    # x["window_height"] = 2.5  # Window height [m]
+    #
+    # #   Deterministic fire inputs
+    #
+    # x["time_start"] = 0  # Start time of simulation [s]
+    # x["time_limiting"] = 0.333  # Limiting time for fuel controlled case in EN 1991-1-2 parametric fire [hr]
+    # x["room_wall_thermal_inertia"] = 720  # Compartment thermal inertia [J/m2s1/2K]
+    # x["fire_duration"] = 18000  # Maximum time in time array [s]
+    # x["time_step"] = 30  # Time step used for fire and heat transfer [s]
+    # x["fire_hrr_density"] = 0.25  # HRR density [MW/sq.m]
+    #
+    # #   Section properties for heat transfer evaluation
+    #
+    # x["protection_protected_perimeter"] = 2.14  # Heated perimeter [m]
+    # x["beam_cross_section_area"] = 0.017  # Cross section area [sq.m]
+    # x["protection_thickness"] = 0.0125  # Thickness of protection [m]
+    # x["protection_k"] = 0.2  # Protection conductivity [W/m.K]
+    # x["protection_rho"] = 800  # Density of protection [kg/cb.m]
+    # x["protection_c"] = 1700  # Specific heat of protection [J/kg.K]
 
     if dict_extra_inputs is not None:
         x.update(dict_extra_inputs)
