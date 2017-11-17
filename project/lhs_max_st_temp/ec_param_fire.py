@@ -55,9 +55,9 @@ def k_factor (O, qtd, b):
     return k
 
 #   Main parametric routine
-def param_fire(dim1, dim2, dim3, op1dim, op2dim, per_op, qfd, tlim, b, duration, dt):
+def param_fire(dim1, dim2, dim3, op1dim, op2dim, glazf, qfd, tlim, b, duration, dt):
     #   Area Calculations
-    Av = op1dim * op2dim *per_op
+    Av = op1dim * op2dim * glazf
     heq = op2dim
     Af = dim1 * dim2
     At = (2*Af)+((dim1+dim2)*2*dim3)
@@ -72,10 +72,12 @@ def param_fire(dim1, dim2, dim3, op1dim, op2dim, per_op, qfd, tlim, b, duration,
 
     qtd = qtd_calc(qfd, Af, At)
     tmax = tmax_dur(qtd, open_fc)
-    gamma = gamma_calc(open_fc, b)
+    gamma_orig = gamma_calc(open_fc, b)
     Olim = Olim_calc(qtd, tlim) #   limiting opening factor for fuel controlled case
     gammalim = gamma_calc(Olim, b) #    gamma lim for fuel controlled case
-    tstar_max_c = gamma*tmax #  t* for cooling phase calculations
+    tstar_max_c = min(gamma_orig*tmax, tlim) #  t* for cooling phase calculations
+
+    tpmax = ((0.0002 * qtd) / open_fc) * gamma_orig
 
 
     #   Check on k factor for specific combination of factors
@@ -88,13 +90,19 @@ def param_fire(dim1, dim2, dim3, op1dim, op2dim, per_op, qfd, tlim, b, duration,
     if tmax < tlim:
         tmax = tlim
         gamma = gammalim * k
-        tstar_max = gamma * tmax
-        x = tlim * gamma / tstar_max_c
-        #   print("Fuel Controlled")
     else:
-        tstar_max = gamma * tmax
+        gamma = gamma_orig
+
+    # Calculate parametric time at peak temperature
+
+    tstar_max = gamma * tmax
+
+    # Calculate x
+
+    if tmax > tlim:
         x = 1
-        #   print("Ventilation Controlled")
+    else:
+        x = (tlim * gamma_orig) / tpmax
 
     #   Calculate maximum compartment temperature
     temp_max =growth_temp(tstar_max)
@@ -104,15 +112,18 @@ def param_fire(dim1, dim2, dim3, op1dim, op2dim, per_op, qfd, tlim, b, duration,
     t_min = t_sec / 60
     t_hr = t_sec / 3600
     t_star = t_hr * gamma
+    t_star_c = t_hr * gamma_orig
 
-    # Ventilation controlled parameters
+    # Cooling phase
     temp_grow = growth_temp(t_star)* (t_star < tstar_max).astype(int)
-    temp_decay1 = decay_temp1(t_star,temp_max,tstar_max_c, x) * (tstar_max_c <= 0.5) * (t_star > tstar_max)
+
+    temp_decay1 = decay_temp1(t_star_c,temp_max,tpmax, x) * (tpmax <= 0.5) * (t_star >= tstar_max)
     temp_decay1[temp_decay1<0] = 0
-    temp_decay2 = decay_temp2(t_star,temp_max,tstar_max_c, x)* (2 > tstar_max_c > 0.5) * (t_star > tstar_max)
+    temp_decay2 = decay_temp2(t_star_c,temp_max,tpmax, x) * (2 > tpmax > 0.5) * (t_star >= tstar_max)
     temp_decay2[temp_decay2<0] = 0
-    temp_decay3 = decay_temp3(t_star,temp_max,tstar_max_c, x)* (tstar_max_c >= 2.0) * (t_star > tstar_max)
+    temp_decay3 = decay_temp3(t_star_c,temp_max,tpmax, x) * (tpmax >= 2.0) * (t_star >= tstar_max)
     temp_decay3[temp_decay3<0] = 0
     temp_all = temp_grow+temp_decay1+temp_decay2+temp_decay3
+    temp_all[temp_all<20] = 20
 
     return t_sec, t_min, temp_all
