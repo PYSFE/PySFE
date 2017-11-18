@@ -281,7 +281,7 @@ def mc_fr_calculation(
     interp_ = interp1d(temperature_steel, time_, kind="linear")
     time_fire_resistance = interp_(beam_temperature_goal)
 
-    return time_fire_resistance
+    return time_fire_resistance, seek_status
 
 
 def mc_inputs_generator(simulation_count, dict_extra_inputs=None):

@@ -22,7 +22,7 @@ if __name__ == "__main__":
     simulation_count = 500
     progress_print_interval = 5  # [s]
     count_process_threads = 0  # 0 to use maximum available processors
-    steel_temperature_goal = 273.15+600
+    steel_temperature_goal = 273.15+620
     # NOTE: go to function mc_inputs_maker to adjust parameters for the monte carlo simulation
 
     # MAKE INPUTS
@@ -55,9 +55,10 @@ if __name__ == "__main__":
     # POST PROCESS
     # format outputs
     results = np.array(results)
-    time_equivalence = results
+    seek_successful = sum(results[:, 1])
+    time_equivalence = results[:,0][results[:,1] == True]
     time_equivalence = np.sort(time_equivalence)
-    percentile = np.arange(1, simulation_count + 1) / simulation_count
+    percentile = np.arange(1, seek_successful + 1) / seek_successful
     df_outputs = pd.DataFrame({"PERCENTILE [%]": percentile,
                                "TIME EQUIVALENCE [min]": time_equivalence/60., })
     df_outputs = df_outputs[["PERCENTILE [%]", "TIME EQUIVALENCE [min]"]]
