@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import random
 import time
@@ -8,7 +9,7 @@ from scipy.stats.distributions import norm, gumbel_r
 from pyDOE import lhs
 from project.dat.steel_carbon import Thermal
 import project.lhs_max_st_temp.ec_param_fire as pf
-import project.lhs_max_st_temp.tfm_alt as tfma
+import project.lhs_max_st_temp.tfm_alt as _fire_travelling
 from project.func.temperature_steel_section import protected_steel_eurocode as _steel_temperature
 from scipy.optimize import fmin, newton, minimize, minimize_scalar
 import pandas as pd
@@ -88,11 +89,11 @@ def mc_calculation(
         #                                   time_step)
         tsec, temps = _fire_param(**inputs_parametric_fire)
 
-        fire_type = "Parametric"
+        fire_type = 0
 
     else:  # Otherwise, it is a travelling fire
         #   Get travelling fire curve
-        tsec, temps, heat_release, distance_to_element = tfma.travelling_fire(
+        tsec, temps, heat_release, distance_to_element = _fire_travelling.travelling_fire(
             fire_load_density,
             fire_hrr_density,
             room_depth,
@@ -109,7 +110,7 @@ def mc_calculation(
             window_open_fraction
         )
         temps += 273.15
-        fire_type = "Travelling"
+        fire_type = 1
 
     # print("LHS_model_realisation_count =", i + 1, "Of", lhs_iterations)
 
@@ -134,7 +135,7 @@ def mc_calculation(
     }
     max_temp = np.max(_steel_temperature(**inputs_steel_heat_transfer)[1])
 
-    return max_temp
+    return max_temp, window_open_fraction, fire_load_density, fire_spread_speed, beam_position, temperature_max_near_field, fire_type
 
 
 def mc_fr_calculation(
@@ -203,11 +204,11 @@ def mc_fr_calculation(
         #                                   time_step)
         tsec, temps = _fire_param(**inputs_parametric_fire)
 
-        fire_type = "Parametric"
+        fire_type = 0
 
     else:  # Otherwise, it is a travelling fire
         #   Get travelling fire curve
-        tsec, temps, heat_release, distance_to_element = tfma.travelling_fire(
+        tsec, temps, heat_release, distance_to_element = _fire_travelling.travelling_fire(
             fire_load_density,
             fire_hrr_density,
             room_depth,
@@ -224,7 +225,7 @@ def mc_fr_calculation(
             window_open_fraction
         )
         temps += 273.15
-        fire_type = "Travelling"
+        fire_type = 1
 
     # print("LHS_model_realisation_count =", i + 1, "Of", lhs_iterations)
 
@@ -281,11 +282,12 @@ def mc_fr_calculation(
     interp_ = interp1d(temperature_steel, time_, kind="linear")
     time_fire_resistance = interp_(beam_temperature_goal)
 
-    return time_fire_resistance, seek_status
+    return time_fire_resistance, seek_status, window_open_fraction, fire_load_density, fire_spread_speed, beam_position, temperature_max_near_field, fire_type, T_max, protection_thickness_
 
 
 def mc_inputs_generator(simulation_count, dict_extra_inputs=None):
     steel_prop = Thermal()
+    dir_package = os.path.dirname(os.path.abspath(__file__))
 
     #   Handy interim functions
 
@@ -298,9 +300,12 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None):
 
     x = dict()
 
-    # Read input variables from external text file
+    # Read rooms' properties
+    dir_input_file = "/".join([dir_package, "inputs_mp_rooms.csv"])
+    df_rooms = pd.read_csv(dir_input_file, header=0)
+    # todo: not yet finished
 
-    dir_package = os.path.dirname(os.path.abspath(__file__))
+    # Read input variables from external text file
     dir_input_file = "/".join([dir_package, "inputs_mp.txt"])
     with open(dir_input_file, "r") as file_inputs:
         string_inputs = file_inputs.read()

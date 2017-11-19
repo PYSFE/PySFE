@@ -68,17 +68,3 @@ def travelling_fire(
     T_g[T_g>=nft_max_C] = nft_max_C
 
     return t, T_g, Q, r
-
-#data_combined = zip(time, temperature, heat_release, distance_to_element)
-#data_combined = [list(a) for a in list(data_combined)]
-#data_combined = np.asarray(data_combined, dtype=float)
-#np.savetxt('test_output.csv', data_combined, delimiter=',')
-
-#plt.figure(1)
-#plt.subplot(311)
-#plt.plot(time, temperature)
-#plt.subplot(312)
-#plt.plot(time, heat_release)
-#plt.subplot(313)
-#plt.plot(time, distance_to_element)
-#plt.show()

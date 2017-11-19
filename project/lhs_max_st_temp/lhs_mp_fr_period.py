@@ -7,10 +7,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from project.lhs_max_st_temp.func import mc_fr_calculation, mc_inputs_generator
 from project.func.temperature_fires import standard_fire_iso834 as standard_fire
+from project.cls.plot import Scatter2D
 
 
 # wrapper to deal with inputs format (dict-> kwargs)
-def worker_with_progress_tracker(arg):
+def worker(arg):
     kwargs, q = arg
     result = mc_fr_calculation(**kwargs)
     q.put(kwargs)
@@ -19,9 +20,9 @@ def worker_with_progress_tracker(arg):
 
 if __name__ == "__main__":
     # SETTINGS
-    simulation_count = 500
+    simulation_count = 50
     progress_print_interval = 5  # [s]
-    count_process_threads = 0  # 0 to use maximum available processors
+    count_process_threads = 2  # 0 to use maximum available processors
     steel_temperature_goal = 273.15+620
     # NOTE: go to function mc_inputs_maker to adjust parameters for the monte carlo simulation
 
@@ -40,7 +41,7 @@ if __name__ == "__main__":
     m = mp.Manager()
     q = m.Queue()
     p = mp.Pool(os.cpu_count())
-    jobs = p.map_async(worker_with_progress_tracker, [(kwargs, q) for kwargs in list_kwargs])
+    jobs = p.map_async(worker, [(kwargs, q) for kwargs in list_kwargs])
     count_total_simulations = len(list_kwargs)
     while progress_print_interval:
         if jobs.ready():
@@ -54,23 +55,35 @@ if __name__ == "__main__":
 
     # POST PROCESS
     # format outputs
-    results = np.array(results)
+    results = np.array(results, dtype=float)
     seek_successful = sum(results[:, 1])
-    time_equivalence = results[:,0][results[:,1] == True]
+    time_equivalence = results[:, 0][results[:, 1] == True]
     time_equivalence = np.sort(time_equivalence)
     percentile = np.arange(1, seek_successful + 1) / seek_successful
-    df_outputs = pd.DataFrame({"PERCENTILE [%]": percentile,
-                               "TIME EQUIVALENCE [min]": time_equivalence/60., })
-    df_outputs = df_outputs[["PERCENTILE [%]", "TIME EQUIVALENCE [min]"]]
+    df_outputs = pd.DataFrame({"TIME EQUIVALENCE [min]": results[:, 0]/60.,
+                               "SEEK STATUS [bool]": results[:, 1],
+                               "WINDOW OPEN FRACTION [%]": results[:, 2],
+                               "FIRE LOAD DENSITY [MJ/m2]": results[:, 3],
+                               "FIRE SPREAD SPEED [m/s]": results[:, 4],
+                               "BEAM POSITION [m]": results[:, 5],
+                               "MAX. NEAR FIELD TEMPERATURE [C]": results[:, 6],
+                               "FIRE TYPE [0:P., 1:T.]": results[:, 7],
+                               "PEAK STEEL TEMPERATURE [C]": results[:, 8]-273.15,
+                               "PROTECTION THICKNESS [m]": results[:, 9]})
+    df_outputs = df_outputs[["TIME EQUIVALENCE [min]", "PEAK STEEL TEMPERATURE [C]", "PROTECTION THICKNESS [m]", "SEEK STATUS [bool]", "WINDOW OPEN FRACTION [%]", "FIRE LOAD DENSITY [MJ/m2]", "FIRE SPREAD SPEED [m/s]", "BEAM POSITION [m]", "MAX. NEAR FIELD TEMPERATURE [C]", "FIRE TYPE [0:P., 1:T.]"]]
+    df_outputs.sort_values(by=["TIME EQUIVALENCE [min]"], inplace=True)
+    df_outputs.reset_index(drop=True, inplace=True)
 
     # write outputs to csv
-    df_outputs.to_csv("output.csv", index=False)
+    df_outputs.to_csv("results_numerical.csv", index=True)
 
     # plot outputs
-    plt.figure(1)
-    plt.subplot(111)
-    plt.plot(time_equivalence/60., percentile)
-    plt.grid(True)
-    plt.xlabel('Time Equivalence in ISO 834 [min]')
-    plt.ylabel('Fractile [-]')
-    plt.show()
+    plt = Scatter2D()
+    plt.plot2(time_equivalence/60., percentile)
+    plt.format(**{"figure_size_scale": 0.5,
+                  "axis_lim_y1": (0, 1),
+                  "legend_is_shown": False,
+                  "axis_label_x": "Max Steel Temperature [min]",
+                  "axis_label_y1": "Fractile",
+                  "marker_size": 0})
+    plt.save_figure(name="results_plot")

@@ -10,7 +10,7 @@ def thermal(property_name):
 
     dir_files = {
         "thermal conductivity (thomas2002)":
-            "k_1_T_intrumescent_thomas2002.csv"
+            "k_1_T_intumescent_thomas2002.csv"
     }
 
     # read file

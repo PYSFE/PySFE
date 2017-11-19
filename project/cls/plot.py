@@ -3,16 +3,14 @@ from numpy import array
 import numpy as np
 import math
 import matplotlib
-matplotlib.use('Qt5Agg')
+# matplotlib.use('Qt5Agg')
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import matplotlib as mpl
 import time
 from inspect import currentframe, getframeinfo  # for error handling, get current line number
 import csv
 import os
+import inspect
 
 
 class Scatter2D(object):
@@ -21,6 +19,7 @@ class Scatter2D(object):
         self.axes = []
         self.lines = []
         self.texts = []
+        self._format = None
 
     def self_delete(self):
         plt.close(self.figure)
@@ -46,49 +45,66 @@ class Scatter2D(object):
                 line = self.axes[1].plot(x, y, label=l)
                 self.lines.append(line[0])
 
+    def plot2(self, x, y, label="", second_axis=False):
+        self.axes.append(self.figure.add_subplot(111))
+
+        if second_axis:
+            self.axes.append(self.axes[0].twinx())
+            line = self.axes[1].plot(x, y, label=label)
+        else:
+            line = self.axes[0].plot(x, y, label=label)
+
+        self.lines.append(line[0])
+
     def format(self, **kwargs):
+        def map_dictionary(list_, dict_master):
+            dict_new = dict()
+            for key in list_:
+                if key in dict_master:
+                    dict_new[key] = dict_master[key]
+            return dict_new
+
+        dict_inputs_figure = map_dictionary(inspect.signature(self.format_figure).parameters, kwargs)
+        dict_inputs_axes = map_dictionary(inspect.signature(self.format_axes).parameters, kwargs)
+        dict_inputs_lines = map_dictionary(inspect.signature(self.format_lines).parameters, kwargs)
+        dict_inputs_legend = map_dictionary(inspect.signature(self.format_legend).parameters, kwargs)
+
         # set format
-        self.format_figure(**kwargs)
-        self.format_axes(**kwargs)
-        self.format_lines(**kwargs)
-        self.format_legend(**kwargs)
+        self.format_figure(**dict_inputs_figure)
+        self.format_axes(**dict_inputs_axes)
+        self.format_lines(**dict_inputs_lines)
+        self.format_legend(**dict_inputs_legend)
 
         self.figure.tight_layout()
 
-    def format_figure(self, **kwargs):
-        figure_size_width = 10. if 'figure_size_width' not in kwargs else kwargs['figure_size_width']
-        figure_size_height = 7.5 if 'figure_size_height' not in kwargs else kwargs['figure_size_height']
-        figure_size_scale = 1. if 'figure_size_scale' not in kwargs else kwargs['figure_size_scale']
-        figure_title = '' if 'figure_title' not in kwargs else kwargs['figure_title']
-        figure_title_font_size = 15. if 'figure_title_font_size' not in kwargs else kwargs['figure_title_font_size']
+    def format_figure(self,
+                      figure_size_width=8.,
+                      figure_size_height=6.,
+                      figure_size_scale=1.,
+                      figure_title="",
+                      figure_title_font_size=15.):
 
-        if figure_size_scale * figure_size_height > 0 and figure_size_scale * figure_size_width > 0:
-            self.figure.set_size_inches(w=figure_size_width * figure_size_scale, h=figure_size_height * figure_size_scale)
+        self.figure.set_size_inches(w=figure_size_width * figure_size_scale, h=figure_size_height * figure_size_scale)
         self.figure.suptitle(figure_title, fontsize=figure_title_font_size)
         self.figure.set_facecolor((1 / 237., 1 / 237., 1 / 237., 0.0))
 
-    def format_axes(self, **kwargs):
+    def format_axes(self,
+                    axis_label_x="",
+                    axis_label_y1="",
+                    axis_label_y2="",
+                    axis_label_font_size=9.,
+                    axis_tick_font_size=8.,
+                    axis_lim_x=None,
+                    axis_lim_y1=None,
+                    axis_lim_y2=None,
+                    axis_linewidth=1.,
+                    axis_scientific_format_x=False,
+                    axis_scientific_format_y1=False,
+                    axis_scientific_format_y2=False,
+                    axis_tick_width=.5,
+                    axis_tick_length=2.5,
+                    axis_grid_show=True):
         has_secondary = len(self.axes) > 1
-        axis_lim_y2 = None
-        axis_label_y2 = None
-
-        axis_label_x = '' if 'axis_label_x' not in kwargs else kwargs['axis_label_x']
-        axis_label_y1 = '' if 'axis_label_y1' not in kwargs else kwargs['axis_label_y1']
-        if has_secondary:
-            axis_label_y2 = '' if 'axis_label_y2' not in kwargs else kwargs['axis_label_y2']
-        axis_label_font_size = 11. if 'axis_label_font_size' not in kwargs else kwargs['axis_label_font_size']
-        axis_tick_font_size = 9. if 'axis_tick_font_size' not in kwargs else kwargs['axis_tick_font_size']
-        axis_lim_x = self.axes[0].get_xlim() if 'axis_lim_x' not in kwargs else kwargs['axis_lim_x']
-        axis_lim_y1 = self.axes[0].get_ylim() if 'axis_lim_y1' not in kwargs else kwargs['axis_lim_y1']
-        if has_secondary:
-            axis_lim_y2 = self.axes[1].get_ylim() if 'axis_lim_y2' not in kwargs else kwargs['axis_lim_y2']
-        axis_linewidth = 1. if 'axis_linewidth' not in kwargs else kwargs['axis_linewidth']
-        axis_scientific_format_x = False if 'axis_scientific_format_x' not in kwargs else kwargs['axis_scientific_format_x']
-        axis_scientific_format_y1 = False if 'axis_scientific_format_y1' not in kwargs else kwargs['axis_scientific_format_y1']
-        axis_scientific_format_y2 = False if 'axis_scientific_format_y2' not in kwargs else kwargs['axis_scientific_format_y2']
-
-        axis_tick_width = .5 if 'axis_tick_width' not in kwargs else kwargs['axis_tick_width']
-        axis_tick_length = 2.5 if 'axis_tick_length' not in kwargs else kwargs['axis_tick_length']
 
         self.axes[0].set_xlim(axis_lim_x)
         self.axes[0].set_ylim(axis_lim_y1)
@@ -100,24 +116,29 @@ class Scatter2D(object):
         self.axes[0].get_yaxis().get_major_formatter().set_useOffset(axis_scientific_format_y1)
         self.axes[1].get_yaxis().get_major_formatter().set_useOffset(axis_scientific_format_y2) if has_secondary else None
 
-        [i.set_linewidth(axis_linewidth) for i in self.axes[0].spines.itervalues()]
-        [i.set_linewidth(axis_linewidth) for i in self.axes[1].spines.itervalues()] if has_secondary else None
+        [i.set_linewidth(axis_linewidth) for i in self.axes[0].spines.values()]
+        [i.set_linewidth(axis_linewidth) for i in self.axes[1].spines.values()] if has_secondary else None
 
         self.axes[0].tick_params(axis='both', which='major', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in')
         self.axes[0].tick_params(axis='both', which='minor', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in')
         self.axes[1].tick_params(axis='both', which='major', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in') if has_secondary else None
         self.axes[1].tick_params(axis='both', which='minor', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in') if has_secondary else None
 
+        self.axes[0].grid(axis_grid_show, linestyle="--", linewidth=.5, color="black")
 
-    def format_lines(self, **kwargs):
-        # -----
-        marker_size = 2 if 'marker_size' not in kwargs else kwargs['marker_size']
-        mark_every = 100 if 'mark_every' not in kwargs else kwargs['mark_every']
-        marker_fill_style = 'none' if 'marker_fill_style' not in kwargs else kwargs['marker_fill_style']
-        marker_edge_width = .5 if 'marker_edge_width' not in kwargs else kwargs['marker_edge_width']
-        # -----
-        line_width = 1. if 'line_width' not in kwargs else kwargs['line_width']
-        line_style = '-' if 'line_style' not in kwargs else kwargs['line_style']
+        # tick_lines = self.axes[0].get_xticklines() + self.axes[0].get_yticklines()
+        # [line.set_linewidth(3) for line in tick_lines]
+        #
+        # tick_labels = self.axes[0].get_xticklabels() + self.axes[0].get_yticklabels()
+        # [label.set_fontsize("medium") for label in tick_labels]
+
+    def format_lines(self,
+                     marker_size=3,
+                     mark_every=100,
+                     marker_fill_style="none",
+                     marker_edge_width=.5,
+                     line_width=1.,
+                     line_style="-"):
 
         c = [(80, 82, 199), (30, 206, 214), (179, 232, 35), (245, 198, 0), (255, 89, 87)]
         c = [(colour[0] / 255., colour[1] / 255., colour[2] / 255.) for colour in c] * 100
@@ -135,13 +156,14 @@ class Scatter2D(object):
             l.set_linestyle(line_style)
             l.set_linewidth(line_width)
 
-    def format_legend(self, **kwargs):
-        legend_is_shown = True if 'legend_is_shown' not in kwargs else kwargs['legend_is_shown']
-        legend_loc = 0 if 'legend_loc' not in kwargs else kwargs['legend_loc']
-        legend_font_size = 8 if 'legend_font_size' not in kwargs else kwargs['legend_font_size']
-        legend_alpha = 1.0 if 'legend_alpha' not in kwargs else kwargs['legend_alpha']
-        legend_is_fancybox = False if 'legend_is_fancybox' not in kwargs else kwargs['legend_is_fancybox']
-        legend_line_width = 1. if 'legend_line_width' not in kwargs else kwargs['legend_line_width']
+    def format_legend(self,
+                      legend_is_shown=True,
+                      legend_loc=0,
+                      legend_font_size=8,
+                      legend_colour="black",
+                      legend_alpha=1.0,
+                      legend_is_fancybox=False,
+                      legend_line_width=1.):
 
         line_labels = [l.get_label() for l in self.lines]
         legend = self.axes[len(self.axes) - 1].legend(
@@ -151,9 +173,10 @@ class Scatter2D(object):
             fancybox=legend_is_fancybox,
             prop={'size': legend_font_size}
             )
-        legend.set_visible(True) if legend_is_shown else legend.set_visible(False)
+        legend.set_visible(legend_is_shown)
         legend.get_frame().set_alpha(legend_alpha)
         legend.get_frame().set_linewidth(legend_line_width)
+        legend.get_frame().set_edgecolor(legend_colour)
 
         self.texts.append(legend)
 
@@ -225,21 +248,27 @@ class Scatter2D(object):
         self.lines[i].set_fillstyle(marker_fill_style)
 
     def update_line(self, line_name):
+        # todo
         pass
 
     def remove_line(self, line_name):
+        # todo
         pass
 
-    def save_figure(self, figure_name, time_suffix=False):
+    def save_figure(self, name="figure", file_format=".pdf", name_prefix="", name_suffix="", dpi=300):
         time_suffix = False
-        if time_suffix:
-            figure_name += (" " + time.strftime("%m%d.%H%M%S"))
+        str_time = time.strftime("%m%d.%H%M%S")
+        if name_suffix == "time":
+            name_suffix = str_time
+        if name_prefix == "time":
+            name_prefix = str_time
+        name = "".join([name_prefix, name, name_suffix])
         self.figure.tight_layout()
-        figure_name += '.pdf'
-        self.figure.savefig(figure_name, bbox_inches='tight')
+        name += file_format
+        self.figure.savefig(name, bbox_inches='tight', dpi=dpi)
 
     def show(self):
-        self.figure.show()
+        self.figure.show(warn=True)
 
 
 if __name__ == "__main__":
