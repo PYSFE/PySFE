@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from project.cls.plot import Scatter2D
-from project.lhs_max_st_temp.func import mc_calculation, mc_inputs_generator
+from project.lhs_max_st_temp.func import mc_calculation, mc_inputs_generator, mc_post_processing
 
 
 # wrapper to deal with inputs format (dict-> kwargs)
@@ -20,7 +20,7 @@ def worker(arg):
 if __name__ == "__main__":
     # SETTINGS
     simulation_count = 500
-    progress_print_interval = 5  # [s]
+    progress_print_interval = 1  # [s]
     count_process_threads = 0  # 0 to use maximum available processors
     # NOTE: go to function mc_inputs_maker to adjust parameters for the monte carlo simulation
 
@@ -50,9 +50,10 @@ if __name__ == "__main__":
     # POST PROCESS
     # format outputs
     results = np.array(results)
-    temperature_max_steel = results[:,0]
-    temperature_max_steel = np.sort(temperature_max_steel)
-    percentile = np.arange(1, simulation_count + 1) / simulation_count
+    temperature_max_steel = results[:, 0]
+    a, b, a_, b_, c = mc_post_processing(temperature_max_steel)
+    # temperature_max_steel = np.sort(temperature_max_steel)
+    # percentile = np.arange(1, simulation_count + 1) / simulation_count
 
     df_outputs = pd.DataFrame({"PEAK STEEL TEMPERATURE [C]": results[:, 0] - 273.15,
                                "WINDOW OPEN FRACTION [%]": results[:, 1],
@@ -70,7 +71,8 @@ if __name__ == "__main__":
 
     # plot outputs
     plt = Scatter2D()
-    plt.plot2(temperature_max_steel-273.15, percentile)
+    plt.plot2(a-273.15, b)
+    plt.plot2(a_-273.15, b_)
     plt.format(**{"figure_size_scale": 0.5,
                   "legend_is_shown": False,
                   "axis_label_x": "Max Steel Temperature [$\degree C$]",

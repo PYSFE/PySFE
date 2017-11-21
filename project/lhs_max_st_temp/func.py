@@ -19,6 +19,7 @@ from project.func.temperature_fires import standard_fire_iso834
 from scipy.interpolate import interp1d
 from project.func.temperature_fires import parametric_eurocode1 as _fire_param
 from project.func.kwargs_from_text import kwargs_from_text
+from scipy import stats
 
 
 logging.basicConfig(filename="log.txt", level=logging.DEBUG)
@@ -390,3 +391,17 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None):
         list_inputs.append(x_)
 
     return list_inputs
+
+
+def mc_post_processing(x):
+    # work out x, y
+    x = np.sort(x)
+    y = np.arange(1, len(x) + 1) / len(x)
+
+    # work out pdf
+    pdf = stats.gaussian_kde(x, bw_method="scott")
+    x_ = np.arange(x.min(), x.max()+1, 1)
+    y_ = pdf.evaluate(x_)
+    y_ = np.cumsum(y_)
+
+    return x, y, x_, y_, pdf
