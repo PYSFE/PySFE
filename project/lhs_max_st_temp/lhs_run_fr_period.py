@@ -242,12 +242,12 @@ plt.xlabel('Time Equiv [min]')
 plt.ylabel('Fractile [-]')
 plt.show()
 
-# plt.figure(2)
+# plt._figure(2)
 # plt.plot(tsec,temps)
 # plt.plot(tsec,steelt)
 # plt.show()
 
-# plt.figure(3)
+# plt._figure(3)
 # plt.plot(tsec, heat_release)
 # plt.show()
 

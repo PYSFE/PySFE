@@ -180,7 +180,7 @@ True
 True
 >>> numpy.allclose(shear, [0, math.tan(beta), 0])
 True
->>> is_same_transform(R, euler_matrix(axes='sxyz', *angles))
+>>> is_same_transform(R, euler_matrix(_axes='sxyz', *angles))
 True
 >>> M1 = compose_matrix(scale, shear, angles, trans, persp)
 >>> is_same_transform(M, M1)
@@ -729,9 +729,9 @@ def decompose_matrix(matrix):
 
     Return tuple of:
         scale : vector of 3 scaling factors
-        shear : list of shear factors for x-y, x-z, y-z axes
-        angles : list of Euler angles about static x, y, z axes
-        translate : translation vector along x, y, z axes
+        shear : list of shear factors for x-y, x-z, y-z _axes
+        angles : list of Euler angles about static x, y, z _axes
+        translate : translation vector along x, y, z _axes
         perspective : perspective partition of matrix
 
     Raise ValueError if matrix is of wrong type or degenerative.
@@ -814,9 +814,9 @@ def compose_matrix(scale=None, shear=None, angles=None, translate=None,
 
     Sequence of transformations:
         scale : vector of 3 scaling factors
-        shear : list of shear factors for x-y, x-z, y-z axes
-        angles : list of Euler angles about static x, y, z axes
-        translate : translation vector along x, y, z axes
+        shear : list of shear factors for x-y, x-z, y-z _axes
+        angles : list of Euler angles about static x, y, z _axes
+        translate : translation vector along x, y, z _axes
         perspective : perspective partition of matrix
 
     >>> scale = numpy.random.random(3) - 0.5
@@ -1050,7 +1050,7 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     """Return homogeneous rotation matrix from Euler angles and axis sequence.
 
     ai, aj, ak : Euler's roll, pitch and yaw angles
-    axes : One of 24 axis sequences as string or encoded tuple
+    _axes : One of 24 axis sequences as string or encoded tuple
 
     >>> R = euler_matrix(1, 2, 3, 'syxz')
     >>> numpy.allclose(numpy.sum(R[0]), -1.34786452)
@@ -1059,10 +1059,10 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     >>> numpy.allclose(numpy.sum(R[0]), -0.383436184)
     True
     >>> ai, aj, ak = (4*math.pi) * (numpy.random.random(3) - 0.5)
-    >>> for axes in _AXES2TUPLE.keys():
-    ...    R = euler_matrix(ai, aj, ak, axes)
-    >>> for axes in _TUPLE2AXES.keys():
-    ...    R = euler_matrix(ai, aj, ak, axes)
+    >>> for _axes in _AXES2TUPLE.keys():
+    ...    R = euler_matrix(ai, aj, ak, _axes)
+    >>> for _axes in _TUPLE2AXES.keys():
+    ...    R = euler_matrix(ai, aj, ak, _axes)
 
     """
     try:
@@ -1112,7 +1112,7 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
 def euler_from_matrix(matrix, axes='sxyz'):
     """Return Euler angles from rotation matrix for specified axis sequence.
 
-    axes : One of 24 axis sequences as string or encoded tuple
+    _axes : One of 24 axis sequences as string or encoded tuple
 
     Note that many Euler angle triplets can describe one matrix.
 
@@ -1122,10 +1122,10 @@ def euler_from_matrix(matrix, axes='sxyz'):
     >>> numpy.allclose(R0, R1)
     True
     >>> angles = (4*math.pi) * (numpy.random.random(3) - 0.5)
-    >>> for axes in _AXES2TUPLE.keys():
-    ...    R0 = euler_matrix(axes=axes, *angles)
-    ...    R1 = euler_matrix(axes=axes, *euler_from_matrix(R0, axes))
-    ...    if not numpy.allclose(R0, R1): print(axes, "failed")
+    >>> for _axes in _AXES2TUPLE.keys():
+    ...    R0 = euler_matrix(_axes=_axes, *angles)
+    ...    R1 = euler_matrix(_axes=_axes, *euler_from_matrix(R0, _axes))
+    ...    if not numpy.allclose(R0, R1): print(_axes, "failed")
 
     """
     try:
@@ -1182,7 +1182,7 @@ def quaternion_from_euler(ai, aj, ak, axes='sxyz'):
     """Return quaternion from Euler angles and axis sequence.
 
     ai, aj, ak : Euler's roll, pitch and yaw angles
-    axes : One of 24 axis sequences as string or encoded tuple
+    _axes : One of 24 axis sequences as string or encoded tuple
 
     >>> q = quaternion_from_euler(1, 2, 3, 'ryxz')
     >>> numpy.allclose(q, [0.435953, 0.310622, -0.718287, 0.444435])
@@ -1569,7 +1569,7 @@ class Arcball(object):
         self._center[1] = center[1]
 
     def setaxes(self, *axes):
-        """Set axes to constrain rotations."""
+        """Set _axes to constrain rotations."""
         if axes is None:
             self._axes = None
         else:
@@ -1666,7 +1666,7 @@ _EPS = numpy.finfo(float).eps * 4.0
 # axis sequences for Euler angles
 _NEXT_AXIS = [1, 2, 0, 1]
 
-# map axes strings to/from tuples of inner axis, parity, repetition, frame
+# map _axes strings to/from tuples of inner axis, parity, repetition, frame
 _AXES2TUPLE = {
     'sxyz': (0, 0, 0, 0), 'sxyx': (0, 0, 1, 0), 'sxzy': (0, 1, 0, 0),
     'sxzx': (0, 1, 1, 0), 'syzx': (1, 0, 0, 0), 'syzy': (1, 0, 1, 0),
@@ -1802,7 +1802,7 @@ def vector_product(v0, v1, axis=0):
 def angle_between_vectors(v0, v1, directed=True, axis=0):
     """Return angle between vectors.
 
-    If directed is False, the input vectors are interpreted as undirected axes,
+    If directed is False, the input vectors are interpreted as undirected _axes,
     i.e. the maximum angle is pi/2.
 
     >>> a = angle_between_vectors([1, -2, 3], [-1, 2, -3])

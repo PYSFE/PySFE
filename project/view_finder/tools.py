@@ -126,7 +126,7 @@ def plot_poly_axes3d(file_name, verts, magnitudes=None,
     # z = [coordinate[2] for coordinate in poly_vertices]
 
 
-    # instantiate figure
+    # instantiate _figure
     if not figure_ax:
         fig = plt.figure(figsize=(width_scale * 8.3, width_scale * 8.3/1.3333333333))
         fig_ax = Axes3D(fig)

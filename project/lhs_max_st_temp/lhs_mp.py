@@ -19,7 +19,7 @@ def worker(arg):
 
 if __name__ == "__main__":
     # SETTINGS
-    simulation_count = 500
+    simulation_count = 1000
     progress_print_interval = 1  # [s]
     count_process_threads = 0  # 0 to use maximum available processors
     # NOTE: go to function mc_inputs_maker to adjust parameters for the monte carlo simulation
@@ -47,14 +47,10 @@ if __name__ == "__main__":
     time_count_simulation = time.perf_counter() - time_count_simulation
     print("SIMULATION COMPLETED IN {:0.3f} SECONDS".format(time_count_simulation, progress_print_interval))
 
+    results = np.array(results)
+
     # POST PROCESS
     # format outputs
-    results = np.array(results)
-    temperature_max_steel = results[:, 0]
-    a, b, a_, b_, c = mc_post_processing(temperature_max_steel)
-    # temperature_max_steel = np.sort(temperature_max_steel)
-    # percentile = np.arange(1, simulation_count + 1) / simulation_count
-
     df_outputs = pd.DataFrame({"PEAK STEEL TEMPERATURE [C]": results[:, 0] - 273.15,
                                "WINDOW OPEN FRACTION [%]": results[:, 1],
                                "FIRE LOAD DENSITY [MJ/m2]": results[:, 2],
@@ -70,12 +66,16 @@ if __name__ == "__main__":
     df_outputs.to_csv("results_numerical.csv", index=True)
 
     # plot outputs
+    x = results[:, 0]
+    x, y, x_, y_, c = mc_post_processing(x)
     plt = Scatter2D()
-    plt.plot2(a-273.15, b)
-    plt.plot2(a_-273.15, b_)
+    plt.plot2(x-273.15, y, "Simulation results")
+    plt.plot2(x_-273.15, y_, "Interpreted CDF")
     plt.format(**{"figure_size_scale": 0.5,
-                  "legend_is_shown": False,
+                  "legend_is_shown": True,
                   "axis_label_x": "Max Steel Temperature [$\degree C$]",
                   "axis_label_y1": "Fractile",
                   "marker_size": 0})
-    plt.save_figure(name="results_plot")
+    plt.update_line_format("Interpreted CDF", **{"line_width": 0.5, "color": "black", "line_style": ":"})
+    plt.update_legend()
+    plt.save_figure(file_name="results_plot", file_format=".png")

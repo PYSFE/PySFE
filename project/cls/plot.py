@@ -15,46 +15,49 @@ import inspect
 
 class Scatter2D(object):
     def __init__(self):
-        self.figure = plt.figure()
-        self.axes = []
-        self.lines = []
-        self.texts = []
+        # todo: add plot vertical and horizontal lines feature
+        # todo: re-think the overall logic
+
+        self._figure = plt.figure()
+        self._axes = []
+        self._lines = []
+        self._texts = []
         self._format = None
 
     def self_delete(self):
-        plt.close(self.figure)
-        self.figure = None
-        self.axes = None
-        self.lines = None
-        self.texts = None
+        plt.close(self._figure)
+        self._figure = None
+        self._axes = None
+        self._lines = None
+        self._texts = None
         del self
 
     def plot(self, xyl1, xyl2=None):
-        # create axes
-        self.axes.append(self.figure.add_subplot(111))
-        self.axes.append(self.axes[0].twinx()) if xyl2 is not None else None
+        # create _axes
+        self._axes.append(self._figure.add_subplot(111))
+        self._axes.append(self._axes[0].twinx()) if xyl2 is not None else None
 
-        # create lines
+        # create _lines
         for i in tuple(xyl1):
             x, y, l = tuple(i)
-            line = self.axes[0].plot(x, y, label=l)
-            self.lines.append(line[0])
+            line = self._axes[0].plot(x, y, label=l)
+            self._lines.append(line[0])
         if xyl2 is not None:
             for i in xyl2:
                 x, y, l = tuple(i)
-                line = self.axes[1].plot(x, y, label=l)
-                self.lines.append(line[0])
+                line = self._axes[1].plot(x, y, label=l)
+                self._lines.append(line[0])
 
     def plot2(self, x, y, label="", second_axis=False):
-        self.axes.append(self.figure.add_subplot(111))
+        self._axes.append(self._figure.add_subplot(111))
 
         if second_axis:
-            self.axes.append(self.axes[0].twinx())
-            line = self.axes[1].plot(x, y, label=label)
+            self._axes.append(self._axes[0].twinx())
+            line = self._axes[1].plot(x, y, label=label)
         else:
-            line = self.axes[0].plot(x, y, label=label)
+            line = self._axes[0].plot(x, y, label=label)
 
-        self.lines.append(line[0])
+        self._lines.append(line[0])
 
     def format(self, **kwargs):
         def map_dictionary(list_, dict_master):
@@ -75,7 +78,7 @@ class Scatter2D(object):
         self.format_lines(**dict_inputs_lines)
         self.format_legend(**dict_inputs_legend)
 
-        self.figure.tight_layout()
+        self._figure.tight_layout()
 
     def format_figure(self,
                       figure_size_width=8.,
@@ -84,9 +87,9 @@ class Scatter2D(object):
                       figure_title="",
                       figure_title_font_size=15.):
 
-        self.figure.set_size_inches(w=figure_size_width * figure_size_scale, h=figure_size_height * figure_size_scale)
-        self.figure.suptitle(figure_title, fontsize=figure_title_font_size)
-        self.figure.set_facecolor((1 / 237., 1 / 237., 1 / 237., 0.0))
+        self._figure.set_size_inches(w=figure_size_width * figure_size_scale, h=figure_size_height * figure_size_scale)
+        self._figure.suptitle(figure_title, fontsize=figure_title_font_size)
+        self._figure.set_facecolor((1 / 237., 1 / 237., 1 / 237., 0.0))
 
     def format_axes(self,
                     axis_label_x="",
@@ -104,32 +107,32 @@ class Scatter2D(object):
                     axis_tick_width=.5,
                     axis_tick_length=2.5,
                     axis_grid_show=True):
-        has_secondary = len(self.axes) > 1
+        has_secondary = len(self._axes) > 1
 
-        self.axes[0].set_xlim(axis_lim_x)
-        self.axes[0].set_ylim(axis_lim_y1)
-        self.axes[1].set_ylim(axis_lim_y2) if has_secondary else None
-        self.axes[0].set_xlabel(axis_label_x, fontsize=axis_label_font_size)
-        self.axes[0].set_ylabel(axis_label_y1, fontsize=axis_label_font_size)
-        self.axes[1].set_ylabel(axis_label_y2, fontsize=axis_label_font_size) if has_secondary else None
-        self.axes[0].get_xaxis().get_major_formatter().set_useOffset(axis_scientific_format_x)
-        self.axes[0].get_yaxis().get_major_formatter().set_useOffset(axis_scientific_format_y1)
-        self.axes[1].get_yaxis().get_major_formatter().set_useOffset(axis_scientific_format_y2) if has_secondary else None
+        self._axes[0].set_xlim(axis_lim_x)
+        self._axes[0].set_ylim(axis_lim_y1)
+        self._axes[1].set_ylim(axis_lim_y2) if has_secondary else None
+        self._axes[0].set_xlabel(axis_label_x, fontsize=axis_label_font_size)
+        self._axes[0].set_ylabel(axis_label_y1, fontsize=axis_label_font_size)
+        self._axes[1].set_ylabel(axis_label_y2, fontsize=axis_label_font_size) if has_secondary else None
+        self._axes[0].get_xaxis().get_major_formatter().set_useOffset(axis_scientific_format_x)
+        self._axes[0].get_yaxis().get_major_formatter().set_useOffset(axis_scientific_format_y1)
+        self._axes[1].get_yaxis().get_major_formatter().set_useOffset(axis_scientific_format_y2) if has_secondary else None
 
-        [i.set_linewidth(axis_linewidth) for i in self.axes[0].spines.values()]
-        [i.set_linewidth(axis_linewidth) for i in self.axes[1].spines.values()] if has_secondary else None
+        [i.set_linewidth(axis_linewidth) for i in self._axes[0].spines.values()]
+        [i.set_linewidth(axis_linewidth) for i in self._axes[1].spines.values()] if has_secondary else None
 
-        self.axes[0].tick_params(axis='both', which='major', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in')
-        self.axes[0].tick_params(axis='both', which='minor', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in')
-        self.axes[1].tick_params(axis='both', which='major', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in') if has_secondary else None
-        self.axes[1].tick_params(axis='both', which='minor', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in') if has_secondary else None
+        self._axes[0].tick_params(axis='both', which='major', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in')
+        self._axes[0].tick_params(axis='both', which='minor', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in')
+        self._axes[1].tick_params(axis='both', which='major', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in') if has_secondary else None
+        self._axes[1].tick_params(axis='both', which='minor', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in') if has_secondary else None
 
-        self.axes[0].grid(axis_grid_show, linestyle="--", linewidth=.5, color="black")
+        self._axes[0].grid(axis_grid_show, linestyle="--", linewidth=.5, color="black")
 
-        # tick_lines = self.axes[0].get_xticklines() + self.axes[0].get_yticklines()
+        # tick_lines = self._axes[0].get_xticklines() + self._axes[0].get_yticklines()
         # [line.set_linewidth(3) for line in tick_lines]
         #
-        # tick_labels = self.axes[0].get_xticklabels() + self.axes[0].get_yticklabels()
+        # tick_labels = self._axes[0].get_xticklabels() + self._axes[0].get_yticklabels()
         # [label.set_fontsize("medium") for label in tick_labels]
 
     def format_lines(self,
@@ -145,7 +148,7 @@ class Scatter2D(object):
 
         m = ['o', '^', 's', 'v', 'p', '*', 'D', 'd', '8', '1', 'h', '+', 'H'] * 40
 
-        for i, l in enumerate(self.lines):
+        for i, l in enumerate(self._lines):
             l.set_marker(m[i])
             l.set_color(c[i])
             l.set_markersize(marker_size)
@@ -165,9 +168,9 @@ class Scatter2D(object):
                       legend_is_fancybox=False,
                       legend_line_width=1.):
 
-        line_labels = [l.get_label() for l in self.lines]
-        legend = self.axes[len(self.axes) - 1].legend(
-            self.lines,
+        line_labels = [l.get_label() for l in self._lines]
+        legend = self._axes[len(self._axes) - 1].legend(
+            self._lines,
             line_labels,
             loc=legend_loc,
             fancybox=legend_is_fancybox,
@@ -178,19 +181,19 @@ class Scatter2D(object):
         legend.get_frame().set_linewidth(legend_line_width)
         legend.get_frame().set_edgecolor(legend_colour)
 
-        self.texts.append(legend)
+        self._texts.append(legend)
 
     def add_lines(self, xyl, axis=0):
         for i in xyl:
             x, y, l = tuple(i)
-            line = self.axes[axis].plot(x, y, label=l)
-            self.lines.append(line[0])
+            line = self._axes[axis].plot(x, y, label=l)
+            self._lines.append(line[0])
 
     def update_legend(self, **kwargs):
         """
-        refresh the legend to the existing recent plotted lines.
+        refresh the legend to the existing recent plotted _lines.
         """
-        self.texts[0].remove()
+        self._texts[0].remove()
 
         # legend_is_shown = True if 'legend_is_shown' not in kwargs else kwargs['legend_is_shown']
         # legend_loc = 0 if 'legend_loc' not in kwargs else kwargs['legend_loc']
@@ -198,9 +201,9 @@ class Scatter2D(object):
         # legend_alpha = 1.0 if 'legend_alpha' not in kwargs else kwargs['legend_alpha']
         # legend_is_fancybox = False if 'legend_is_fancybox' not in kwargs else kwargs['legend_is_fancybox']
         #
-        # line_labels = [l.get_label() for l in self.lines]
-        # legend = self.axes[len(self.axes)-1].legend(
-        #     self.lines,
+        # line_labels = [l.get_label() for l in self._lines]
+        # legend = self._axes[len(self._axes)-1].legend(
+        #     self._lines,
         #     line_labels,
         #     loc=legend_loc,
         #     fancybox=legend_is_fancybox,
@@ -210,44 +213,42 @@ class Scatter2D(object):
         # legend.set_visible(True) if legend_is_shown else legend.set_visible(False)
         # legend.get_frame().set_alpha(legend_alpha)
         #
-        # self.texts[0] = legend
+        # self._texts[0] = legend
 
         self.format_legend(**kwargs)
 
-    def update_format_line(self, line_name, **kwargs):
+    def update_line_format(self, line_name, **kwargs):
         lines_index = {}
-        for i,v in enumerate(self.lines):
+        for i,v in enumerate(self._lines):
             lines_index.update({v.get_label(): i})
         i = lines_index[line_name] if line_name in lines_index else None
 
         if i is None:
             frame_info = getframeinfo(currentframe())
-            print('ERROR: Line name does not exist.')
-            print('File: ' + str(frame_info.filename))
-            print('Line: ' + str(frame_info.lineno))
+            print("ERROR: {}; LINE: {:d}; FILE: {}".format("Line name does not exist", frame_info.lineno, frame_info.filename))
             return None
 
-        line_style = self.lines[i].get_linestyle() if 'line_style' not in kwargs else kwargs['line_style']
-        line_width = self.lines[i].get_linewidth() if 'line_width' not in kwargs else kwargs['line_width']
-        color = self.lines[i].get_color() if 'color' not in kwargs else kwargs['color']
-        marker = self.lines[i].get_marker() if 'marker' not in kwargs else kwargs['marker']
-        marker_size = self.lines[i].get_markersize() if 'marker_size' not in kwargs else kwargs['marker_size']
-        mark_every = self.lines[i].get_markevery() if 'mark_every' not in kwargs else kwargs['mark_every']
-        marker_edge_color = self.lines[i].get_markeredgecolor() if 'marker_edge_color' not in kwargs else kwargs['marker_edge_color']
-        marker_edge_width = self.lines[i].get_markeredgewidth() if 'marker_edge_width' not in kwargs else kwargs['marker_edge_width']
-        marker_fill_style = self.lines[i].get_fillstyle() if 'marker_fill_style' not in kwargs else kwargs['marker_fill_style']
+        line_style = self._lines[i].get_linestyle() if 'line_style' not in kwargs else kwargs['line_style']
+        line_width = self._lines[i].get_linewidth() if 'line_width' not in kwargs else kwargs['line_width']
+        color = self._lines[i].get_color() if 'color' not in kwargs else kwargs['color']
+        marker = self._lines[i].get_marker() if 'marker' not in kwargs else kwargs['marker']
+        marker_size = self._lines[i].get_markersize() if 'marker_size' not in kwargs else kwargs['marker_size']
+        mark_every = self._lines[i].get_markevery() if 'mark_every' not in kwargs else kwargs['mark_every']
+        marker_edge_color = self._lines[i].get_markeredgecolor() if 'marker_edge_color' not in kwargs else kwargs['marker_edge_color']
+        marker_edge_width = self._lines[i].get_markeredgewidth() if 'marker_edge_width' not in kwargs else kwargs['marker_edge_width']
+        marker_fill_style = self._lines[i].get_fillstyle() if 'marker_fill_style' not in kwargs else kwargs['marker_fill_style']
 
-        self.lines[i].set_linestyle(line_style)
-        self.lines[i].set_linewidth(line_width)
-        self.lines[i].set_color(color)
-        self.lines[i].set_marker(marker)
-        self.lines[i].set_markersize(marker_size)
-        self.lines[i].set_markevery(mark_every)
-        self.lines[i].set_markeredgecolor(marker_edge_color)
-        self.lines[i].set_markeredgewidth(marker_edge_width)
-        self.lines[i].set_fillstyle(marker_fill_style)
+        self._lines[i].set_linestyle(line_style)
+        self._lines[i].set_linewidth(line_width)
+        self._lines[i].set_color(color)
+        self._lines[i].set_marker(marker)
+        self._lines[i].set_markersize(marker_size)
+        self._lines[i].set_markevery(mark_every)
+        self._lines[i].set_markeredgecolor(marker_edge_color)
+        self._lines[i].set_markeredgewidth(marker_edge_width)
+        self._lines[i].set_fillstyle(marker_fill_style)
 
-    def update_line(self, line_name):
+    def update_line(self, line_name, x, y, label=None):
         # todo
         pass
 
@@ -255,20 +256,32 @@ class Scatter2D(object):
         # todo
         pass
 
-    def save_figure(self, name="figure", file_format=".pdf", name_prefix="", name_suffix="", dpi=300):
+    def save_figure(self, file_name="_figure", file_format=".pdf", name_prefix="", name_suffix="", dir_folder="", dpi=300):
         time_suffix = False
         str_time = time.strftime("%m%d.%H%M%S")
         if name_suffix == "time":
             name_suffix = str_time
         if name_prefix == "time":
             name_prefix = str_time
-        name = "".join([name_prefix, name, name_suffix])
-        self.figure.tight_layout()
-        name += file_format
-        self.figure.savefig(name, bbox_inches='tight', dpi=dpi)
+        file_name = "".join([name_prefix, file_name, name_suffix])
+        self._figure.tight_layout()
+        file_name += file_format
+        self._figure.savefig("/".join([dir_folder, file_name]), bbox_inches='tight', dpi=dpi)
 
     def show(self):
-        self.figure.show(warn=True)
+        self._figure.show(warn=True)
+
+    @property
+    def figure(self):
+        return self.figure
+
+    @property
+    def axes_primary(self):
+        return self._axes[0]
+
+    @property
+    def axes_secondary(self):
+        return self._axes[1]
 
 
 if __name__ == "__main__":
