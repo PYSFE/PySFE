@@ -174,7 +174,7 @@ logging.basicConfig(filename="log.txt", level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
-def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time_end=7200, time_step=1, time_start=0, time_padding = (0, 0),temperature_initial=293.15):
+def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time_end=7200, time_step=1, time_start=0, time_padding = (0, 0),temperature_initial=293.15, is_more_return=False):
     """Function Description: (SI UNITS ONLY)
     This function calculates the time-temperature curve according to Eurocode 1 part 1-2, Appendix A.
     :param A_t:
@@ -286,7 +286,10 @@ def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time
     t *= 3600
     T_g += 273.15
 
-    return t, T_g
+    if is_more_return:
+        return t, T_g, data_all
+    else:
+        return t, T_g
 
 
 def standard_fire_iso834(

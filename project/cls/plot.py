@@ -194,27 +194,6 @@ class Scatter2D(object):
         refresh the legend to the existing recent plotted _lines.
         """
         self._texts[0].remove()
-
-        # legend_is_shown = True if 'legend_is_shown' not in kwargs else kwargs['legend_is_shown']
-        # legend_loc = 0 if 'legend_loc' not in kwargs else kwargs['legend_loc']
-        # legend_font_size = 8 if 'legend_font_size' not in kwargs else kwargs['legend_font_size']
-        # legend_alpha = 1.0 if 'legend_alpha' not in kwargs else kwargs['legend_alpha']
-        # legend_is_fancybox = False if 'legend_is_fancybox' not in kwargs else kwargs['legend_is_fancybox']
-        #
-        # line_labels = [l.get_label() for l in self._lines]
-        # legend = self._axes[len(self._axes)-1].legend(
-        #     self._lines,
-        #     line_labels,
-        #     loc=legend_loc,
-        #     fancybox=legend_is_fancybox,
-        #
-        #     prop={'size': legend_font_size}
-        # )
-        # legend.set_visible(True) if legend_is_shown else legend.set_visible(False)
-        # legend.get_frame().set_alpha(legend_alpha)
-        #
-        # self._texts[0] = legend
-
         self.format_legend(**kwargs)
 
     def update_line_format(self, line_name, **kwargs):

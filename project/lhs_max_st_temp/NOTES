@@ -1,0 +1,3 @@
+lhs_mp_fr_period.py
+*   Within "func.py", time equivalence search will return -1 if searched value is out boudnary, i.e. searched time-
+    equivalence value is over iso-834 curve's maximum time value.

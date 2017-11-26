@@ -1,9 +1,9 @@
-import matplotlib.pyplot as plt
-import copy
+# -*- coding: utf-8 -*-
 
 
 def travelling_fire():
     from project.func.temperature_fires import travelling_fire as fire
+    import matplotlib.pyplot as plt
     time, temperature, data = fire(
         T_0=293.15,
         q_fd=900e6,
@@ -16,9 +16,13 @@ def travelling_fire():
         time_step=60,
         time_ubound=22080
     )
+    plt.plot(time, temperature)
+    plt.show()
+
 
 def parametric_fire():
     from project.func.temperature_fires import parametric_eurocode1 as fire
+    import copy
 
     kwargs = {"A_t": 360,
               "A_f": 100,
@@ -46,46 +50,6 @@ def parametric_fire():
     return 0
 
 
-
-# def parametric_fire2():
-#     from project.lhs_max_st_temp.ec_param_fire import param_fire as fire
-#     return fire(dim1=,
-#                 dim2=,
-#                 dim3=,
-#                 op1dim=,
-#                 op2dim=,
-#                 per_op=,
-#                 qfd=,
-#                 tlim=,
-#                 b=,
-#                 duration=,
-#                 dt=)
-
-
-# def parametric_fire3():
-#     from project.func.temperature_fires import parametric_eurocode1 as fire
-#     return fire(total_enclosure_area=360,
-#                 floor_area=100,
-#                 opening_area=None,
-#                 opening_height=None,
-#                 density_boundary=None,
-#                 specific_heat_boundary=None,
-#                 thermal_conductivity_boundary=None,
-#                 fire_load_density_floor=600e6,
-#                 fire_growth_rate=20*60,
-#                 time_step=30,
-#                 time_extend=600)
-
-def protected_steel_eurocode():
-    from project.func.temperature_fires import standard_fire_iso834 as fire
-    from project.func.temperature_steel_section import protected_steel_eurocode as steel
-    import numpy as np
-    t = np.arange(0,2*60*60,20)
-    T_g = fire(t, 20+273.15)
-    import matplotlib.pyplot as plt
-    plt.plot(t, T_g)
-
-
 if __name__ == "__main__":
-    # parametric_fire()
-    protected_steel_eurocode()
+    travelling_fire()
+    parametric_fire()

@@ -39,7 +39,7 @@ class Thermal(object):
     @staticmethod
     def __make_property(property_name, dict_files=None):
         if dict_files is None: dict_files = {
-            "rho": "rho_1_T_steelc_ec.csv",  # BS EN 1993-1-2:2005, 3.2.2
+            "rho": "rho_1_T_steelc_ec.csv",  # BS EN 1993-1-2:2005, 3.2.2, NOTE: use 7850 constant value
             "k": "k_1_T_steelc_ec.csv",  # BS EN 1993-1-2:2005, 3.4.1.3
             "c": "c_1_T_steelc_ec.csv",  # BS EN 1993-1-2:2005, 3.4.1.2
             "kE": "kE_1_T_steelc_ec.csv",  # BS EN 1993-1-2:2005, Table 3.1, (reduction factor, linear elastic)

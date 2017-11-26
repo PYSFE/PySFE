@@ -68,7 +68,7 @@ def unprotected_steel_eurocode(
 def protected_steel_eurocode(
         time,
         temperature_ambient,
-        rho_steel_T,
+        rho_steel,
         c_steel_T,
         area_steel_section,
         k_protection,
@@ -84,7 +84,7 @@ def protected_steel_eurocode(
     . Ambient (fire) time-temperature data must be given, as well as the parameters specified below.
     :param time:                    {ndarray} [s]
     :param temperature_ambient:     {ndarray} [K]
-    :param rho_steel_T:             {Func} [kg/m3]
+    :param rho_steel:               {float} [kg/m3]
     :param c_steel_T:               {Func} [J/kg/K]
     :param area_steel_section:      {float} [m2]
     :param k_protection:            {float} [K/kg/m]
@@ -100,7 +100,7 @@ def protected_steel_eurocode(
     # todo: revise BS EN 1993-1-2:2005, Clauses 4.2.5.2
 
     V = area_steel_section
-    rho_a = rho_steel_T
+    rho_a = rho_steel
     lambda_p = k_protection
     rho_p = rho_protection
     d_p = thickness_protection
@@ -124,25 +124,37 @@ def protected_steel_eurocode(
         specific_heat_steel[i] = c_steel_T(temperature_steel[i - 1])
 
         # Steel temperature equations are from [BS EN 1993-1-2:2005, Clauses 4.2.5.2, Eq. 4.27]
-        phi = (c_p * rho_p / specific_heat_steel[i] / rho_a(T_g)) * d_p * A_p / V
+        phi = (c_p * rho_p / specific_heat_steel[i] / rho_a) * d_p * A_p / V
 
-        a = (lambda_p*A_p/V) / (d_p * specific_heat_steel[i] * rho_a(T_g))
+        a = (lambda_p*A_p/V) / (d_p * specific_heat_steel[i] * rho_a)
         b = (T_g-temperature_steel[i-1]) / (1.+phi/3.)
         c = (np.exp(phi/10.)-1.) * (T_g-temperature_ambient[i-1])
         d = time[i] - time[i-1]
 
-        temperature_rate_steel[i] = (a * b * d - c) / d  # deviated from e4.27, converted to rate (s-1)
+        temperature_rate_steel[i] = (a * b * d - c) / d  # deviated from e4.27, converted to rate [s-1]
 
         temperature_steel[i] = temperature_steel[i-1] + temperature_rate_steel[i] * d
 
-        T_range_u = max([temperature_steel[i-1], T_g])
-        T_range_l = min([temperature_steel[i-1], T_g])
-        if temperature_steel[i] < T_range_l:
-            temperature_steel[i] = T_range_l
-            temperature_rate_steel[i] = (temperature_steel[i] - temperature_steel[i-1]) / d
-        elif temperature_steel[i] > T_range_u:
-            temperature_steel[i] = T_range_u
-            temperature_rate_steel[i] = (temperature_steel[i] - temperature_steel[i-1]) / d
+        # NOTE: Steel temperature can be decrease at the begining, even the ambient temperature (fire) is hot. This is
+        #       due to the factor 'phi' which intends to address the energy locked within the protection layer.
+        #       The steel temperature is forced to be increased or remain as previous when ambient temperature and
+        #       its previous temperature are all higher than the current calculated temperature.
+        #       A better implementation is perhaps to use a 1-D heat transfer model.
+
+        if temperature_steel[i] < min(temperature_steel[i-1], temperature_ambient[i]):
+            temperature_rate_steel[i] = 0
+            temperature_steel[i] = temperature_steel[i-1]
+
+        # Following is the old 'correction' code which will inadvertently prevent energy lock within the protection layer.
+        # T_range_u = max([temperature_steel[i-1], T_g])
+        # T_range_l = min([temperature_steel[i-1], T_g])
+        #
+        # if temperature_steel[i] < T_range_l:
+        #     temperature_steel[i] = T_range_l
+        #     temperature_rate_steel[i] = (temperature_steel[i] - temperature_steel[i-1]) / d
+        # elif temperature_steel[i] > T_range_u:
+        #     temperature_steel[i] = T_range_u
+        #     temperature_rate_steel[i] = (temperature_steel[i] - temperature_steel[i-1]) / d
 
         if is_terminate_peak_steel_temperature and temperature_rate_steel[i] < 0:
             data_all = {"time [s]": time,

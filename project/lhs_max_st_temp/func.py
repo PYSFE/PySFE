@@ -1,26 +1,17 @@
 # -*- coding: utf-8 -*-
-import os
-import random
-import time
-import multiprocessing as mp
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.stats.distributions import norm, gumbel_r
 from pyDOE import lhs
 from project.dat.steel_carbon import Thermal
 import project.lhs_max_st_temp.ec_param_fire as pf
 import project.lhs_max_st_temp.tfm_alt as _fire_travelling
 from project.func.temperature_steel_section import protected_steel_eurocode as _steel_temperature
-from scipy.optimize import fmin, newton, minimize, minimize_scalar
-import pandas as pd
-import copy
 import logging
 from project.func.temperature_fires import standard_fire_iso834
 from scipy.interpolate import interp1d
 from project.func.temperature_fires import parametric_eurocode1 as _fire_param
 from project.func.kwargs_from_text import kwargs_from_text
 from scipy import stats
-from inspect import currentframe, getframeinfo
 
 
 logging.basicConfig(filename="log.txt", level=logging.DEBUG)
@@ -126,7 +117,7 @@ def mc_calculation(
     inputs_steel_heat_transfer = {
         "time": tsec,
         "temperature_ambient": temps,
-        "rho_steel_T": beam_rho,
+        "rho_steel": beam_rho,
         "c_steel_T": beam_c,
         "area_steel_section": beam_cross_section_area,
         "k_protection": protection_k,
@@ -240,7 +231,7 @@ def mc_fr_calculation(
     # SI UNITS FOR INPUTS!
     inputs_steel_heat_transfer = {"time": tsec,
                                   "temperature_ambient": temps,
-                                  "rho_steel_T": beam_rho,
+                                  "rho_steel": beam_rho,
                                   "c_steel_T": beam_c,
                                   "area_steel_section": beam_cross_section_area,
                                   "k_protection": protection_k,
@@ -256,7 +247,7 @@ def mc_fr_calculation(
     seek_max_iter = 20  # todo: move to input
     seek_ubound = 0.1  # todo: move to input
     seek_lbound = 0.001  # todo: move to input
-    seet_tol_y = 0.5  # todo: move to inputs
+    seet_tol_y = 1  # todo: move to inputs
     seek_count_iter = 0
     seek_status = False
     while seek_count_iter < seek_max_iter and seek_status is False:
@@ -264,16 +255,13 @@ def mc_fr_calculation(
         protection_thickness_ = np.average([seek_ubound, seek_lbound])
         inputs_steel_heat_transfer["thickness_protection"] = protection_thickness_
         t_, T_, d_ = _steel_temperature(**inputs_steel_heat_transfer)
-        # plt.plot(tsec, temps)
-        # plt.plot(t_, T_)
-        # plt.show()
         T_max = np.max(T_)
         y_diff_seek = T_max - beam_temperature_goal
         if abs(y_diff_seek) <= seet_tol_y:
             seek_status = True
         elif T_max > beam_temperature_goal:  # steel is too hot, increase intrumescent paint thickness
             seek_lbound = protection_thickness_
-        else:  # steel is too cool, increase intrumescent paint thickness
+        else:  # steel is too cold, increase intrumescent paint thickness
             seek_ubound = protection_thickness_
 
     # BEAM FIRE RESISTANCE PERIOD IN ISO 834
@@ -284,7 +272,7 @@ def mc_fr_calculation(
     interp_ = interp1d(temperature_steel, time_, kind="linear", bounds_error=False, fill_value=-1)
     time_fire_resistance = interp_(beam_temperature_goal)
 
-    return time_fire_resistance, seek_status, window_open_fraction, fire_load_density, fire_spread_speed, beam_position, temperature_max_near_field, fire_type, T_max, protection_thickness_
+    return time_fire_resistance, seek_status, window_open_fraction, fire_load_density, fire_spread_speed, beam_position, temperature_max_near_field, fire_type, T_max, protection_thickness_, seek_count_iter
 
 
 def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inputs.txt"):
@@ -301,11 +289,6 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inpu
     standard_fire = standard_fire_iso834(np.arange(0, 36000+60, 20), 293.15)
 
     x = dict()
-    xx = dict()
-
-    # Read rooms' properties
-    # df_rooms = pd.read_csv(dir_file, header=0)
-    # todo: Read file in dataframe
 
     # Read input variables from external text file
     with open(dir_file, "r") as file_inputs:
@@ -316,24 +299,22 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inpu
     # Physical properties
 
     x["beam_c"] = steel_prop.c()
-    x["beam_rho"] = steel_prop.rho()
 
     if dict_extra_inputs is not None:
         x.update(dict_extra_inputs)
-
+    
     #   Set distribution mean and standard dev
-
-    qfd_std = x["dist_stddev_fire_load_density"]  # Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
-    qfd_mean = x["dist_mean_fire_load_density"]  # Fire load density - Gumbel distribution - mean [MJ/sq.m]
-    glaz_min = x["dist_min_glazing_break_percentage"]  # Min glazing fall-out fraction [-] - Linear dist
-    glaz_max = x["dist_max_glazing_break_percentage"]  # Max glazing fall-out fraction [-]  - Linear dist
-    beam_min = x["dist_min_beam_location"]  # Min beam location relative to compartment length for TFM [-]  - Linear dist
-    beam_max = x["dist_max_beam_location"]  # Max beam location relative to compartment length for TFM [-]  - Linear dist
-    com_eff_min = x["dist_min_combustion_efficiency"]  # Min combustion efficiency [-]  - Linear dist
-    com_eff_max = x["dist_max_combustion_effeciency"]  # Max combustion efficiency [-]  - Linear dist
-    spread_min = x["dist_min_fire_spread"]  # Min spread rate for TFM [m/s]  - Linear dist
-    spread_max = x["dist_max_fire_spread"]  # Max spread rate for TFM [m/s]  - Linear dist
-    avg_nft = x["dist_norm_near_field_temperature"]  # TFM near field temperature - Norm distribution - mean [C]
+    qfd_std = x["dist_s_fire_load_density"]  # Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
+    qfd_mean = x["dist_m_fire_load_density"]  # Fire load density - Gumbel distribution - mean [MJ/sq.m]
+    glaz_min = x["dist_l_glazing_break_percentage"]  # Min glazing fall-out fraction [-] - Linear dist
+    glaz_max = x["dist_u_glazing_break_percentage"]  # Max glazing fall-out fraction [-]  - Linear dist
+    beam_min = x["dist_l_beam_location"]  # Min beam location relative to compartment length for TFM [-]  - Linear dist
+    beam_max = x["dist_u_beam_location"]  # Max beam location relative to compartment length for TFM [-]  - Linear dist
+    com_eff_min = x["dist_l_combustion_efficiency"]  # Min combustion efficiency [-]  - Linear dist
+    com_eff_max = x["dist_u_combustion_effeciency"]  # Max combustion efficiency [-]  - Linear dist
+    spread_min = x["dist_l_fire_spread"]  # Min spread rate for TFM [m/s]  - Linear dist
+    spread_max = x["dist_u_fire_spread"]  # Max spread rate for TFM [m/s]  - Linear dist
+    avg_nft = x["dist_m_near_field_temperature"]  # TFM near field temperature - Norm distribution - mean [C]
 
     #   Create random number array for each stochastic variable
     list_random_numbers = [lhs(1, samples=lhs_iterations).flatten() for r in range(6)]
@@ -353,18 +334,18 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inpu
     spread_lhs = linear_distribution(spread_min, spread_max, list_random_numbers[4])
     nft_lhs = norm(loc=avg_nft, scale=std_nft).ppf(list_random_numbers[5])
 
-    # delete these items prevent to pass on to mc_calculation
-    del x["dist_stddev_fire_load_density"]  # Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
-    del x["dist_mean_fire_load_density"]  # Fire load density - Gumbel distribution - mean [MJ/sq.m]
-    del x["dist_min_glazing_break_percentage"]  # Min glazing fall-out fraction [-] - Linear dist
-    del x["dist_max_glazing_break_percentage"]  # Max glazing fall-out fraction [-]  - Linear dist
-    del x["dist_min_beam_location"]  # Min beam location relative to compartment length for TFM [-]  - Linear dist
-    del x["dist_max_beam_location"]  # Max beam location relative to compartment length for TFM [-]  - Linear dist
-    del x["dist_min_combustion_efficiency"]  # Min combustion efficiency [-]  - Linear dist
-    del x["dist_max_combustion_effeciency"]  # Max combustion efficiency [-]  - Linear dist
-    del x["dist_min_fire_spread"]  # Min spread rate for TFM [m/s]  - Linear dist
-    del x["dist_max_fire_spread"]  # Max spread rate for TFM [m/s]  - Linear dist
-    del x["dist_norm_near_field_temperature"]  # TFM near field temperature - Norm distribution - mean [C]
+    # delete these items as they are nolonger used and will cause error if passed on
+    del x["dist_s_fire_load_density"]  # Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
+    del x["dist_m_fire_load_density"]  # Fire load density - Gumbel distribution - mean [MJ/sq.m]
+    del x["dist_l_glazing_break_percentage"]  # Min glazing fall-out fraction [-] - Linear dist
+    del x["dist_u_glazing_break_percentage"]  # Max glazing fall-out fraction [-]  - Linear dist
+    del x["dist_l_beam_location"]  # Min beam location relative to compartment length for TFM [-]  - Linear dist
+    del x["dist_u_beam_location"]  # Max beam location relative to compartment length for TFM [-]  - Linear dist
+    del x["dist_l_combustion_efficiency"]  # Min combustion efficiency [-]  - Linear dist
+    del x["dist_u_combustion_effeciency"]  # Max combustion efficiency [-]  - Linear dist
+    del x["dist_l_fire_spread"]  # Min spread rate for TFM [m/s]  - Linear dist
+    del x["dist_u_fire_spread"]  # Max spread rate for TFM [m/s]  - Linear dist
+    del x["dist_m_near_field_temperature"]  # TFM near field temperature - Norm distribution - mean [C]
 
     list_inputs = []
     for i in range(0, lhs_iterations):
