@@ -1,0 +1,27 @@
+VARIABLE,TOT.,AVE. [/s],PEAK [/s],UNIT
+Heat rate - overall,11682032.0,2434.0,2865.0,[kJ]
+Heat rate - burner,5191492.0,1081.0,2865.0,[kJ]
+Heat rate - specimen comb.,6490540.0,1352.0,1591.0,[kJ]
+Heat rate - vent.,-6677735.0,-1391.0,1572.0,[kJ]
+Heat rate - lining,-4565726.0,-951.0,1348.0,[kJ]
+Heat rate - specimen,-304964.0,-64.0,118.0,[kJ]
+Heat rate - intern. gas,-42555.0,-9.0,1907.0,[kJ]
+Heat rate - window,-91052.0,-19.0,29.0,[kJ]
+,,,,
+Heat flux - instantaneous,1986488.0,414.0,695.0,[kW/m2]
+Heat flux - average,1134886.0,236.0,414.0,[kW/m2]
+,,,,
+Mass rate - fuel,112.0,0.0,0.0,[kg]
+Mass rate - specimen,342.0,0.0,0.0,[kg]
+Mass rate - ventilation in,6660.0,1.0,2.0,[kg]
+Mass rate - ventilation ou,7187.0,1.0,26.0,[kg]
+,,,,
+Temperature - furnace,-,845.0,993.0,[deg C]
+Temperature - lining,-,200.0,396.0,[deg C]
+Temperature - specimen,-,332.0,671.0,[deg C]
+,,,,
+Time - temperature deviation,0.0,-,-,[min]
+Time - ventilation controlled,71.7,-,-,[min]
+,,,,
+Length - charring,53.0,0.0,0.0,[mm]
+Content - O2,396963.0,83.0,210.0,[‰ vol.]

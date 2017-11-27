@@ -1,0 +1,32 @@
+time_step = 0.50;                               # [s]
+time_cap = 7200.;                               # [s]
+ambient_air_density = 1.1839;                   # [kg/m3]
+ambient_air_pressure = 101325.;                 # [Pa]
+ambient_temperature = 273.15 + 25.;             # [K]
+gas_emissivity = 0.45;
+ventilation_modifier_fixed = 0.20;              # [kg]
+
+enclosure_volume = 050.00;                      # [m3]
+enclosure_gas_pressure = 101325. * 1.;          # [N/m2]
+
+fuel_material = "propane";                      # propane, methane, cellulose and glucose
+
+specimen_exposed_area = 00.00;                  # [m2]
+specimen_surface_emissivity = 0.9;              #
+specimen_thickness = 0.025;
+specimen_heat_of_combustion = 19e6;             # [J/kg]
+specimen_density = 640.;
+specimen_moisture_content=1.12;                 # DO NOT CHANGE
+
+lining_surface_emissivity = 0.7;
+lining_surface_area = 90.;
+lining_thickness = 0.056;                       # [m]
+lining_conductivity = "constant_0.20";
+lining_density = 1020.;                         # [kg/m3]
+lining_specific_heat = 1100.;                   # [J/kg/K]
+
+window_area = 0.2;                              # [m2]
+
+figure_size_width = 10.;
+figure_size_height = 7.5;
+figure_size_scale = 0.45;

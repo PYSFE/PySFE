@@ -1,0 +1,133 @@
+KNOWN ISSUES:
+* Unable to address energy loss to window (conduction)
+* Finite difference calculation may crash due to small time_step and temperature between virtual_layers close to each
+  other. This is potentially due to that dT_dt calculated for each virtual layers may result in somehow abnormal
+  temperature profile of the layers, and consequently result in abnormal dT_dt during next iteration calculation. This
+  cause the calculated temperatures fluctuate and sometimes when the fluctuation range big, will fell out the predefined
+  thermal data range.
+* Results generally fluctuates during when steady stated is reached.
+* Fluctuation during the beginning of the simulation seems to be an issue. Ultimately it resutls in instantaneous
+  significant heat rate of:
+    - burner combustion,
+    - timber combustion, and
+    - ventilation.
+  The chain reaction maybe: instantaneously high charring rate - high timber combustion rate -
+* O2 content possible to go below 0 due to numerical error.
+* hr_specimen_combustion_oxygen possible to go below 0.
+* charring rate or O2 content change when time step alters.
+* thicker the wall, quicker the energy it losses
+
+POSSIBLE IMPLEMENTATIONS:
+* Tolerance of the fire curve.
+* Consequence of the fire curve tolerance? (probably just calculate everything 2 more times)
+* Goal seek for fuel input and ventilation. (this error is small when small 'time_step' is used)
+
+=======================================================================================================================
+
+PROPOSALS
+* GUI
+* Inspect energy loss to lining, the current issue being increased energy loss at thicker lining.
+
+=======================================================================================================================
+23/04/2017 Sunday
+Version 1.02
+* Now able to write a .csv file contains analysed data.
+* (Experimental) Gensis file contains code which automatically generates input parameter sets based on given ranges of selected parameters. This has been successful but not yet being generalised.
+
+
+10/04/2017
+Version 1.01
+* Added material jm28 and jm30 for lining (jm30 used for default)
+* Fixed hr_burner flucturation issue. hr_burner is set to zero when there is temperature deviation.
+* Fixed some minor format issues.
+* Fixed H2O, CO2 and O2 requirement and comsumption for combustion mathematics, i.e. values of -H_c,ox, +H_c,co2, +H_c,h2o.
+* Fixed occasional negative O2 value within the furnace (after combution, gas_en2) for timber pyrolysis module, this is probably due to numerical precision error which cause very small negative value.
+* Added input parameter 'warning_max_temperature', simulation stops when 'warning_max_temperature' is reached, error 
+  message is given in the save time.
+* Added fail safe mechanism. Simulation will be forced to finish when temperature of specimen or lining have 
+  temperature greater than gas temperature or less than ambient temperature.
+* Implemented muliprocessing.
+
+
+03/04/2017 Monday
+Version 1.00
+* Refactored numerical output procedure.
+* Furnace gas temperature is able to deviate from the target temperature (i.e. ISO 834).
+    - Furnace temeprature can never be negative growth.
+    - When 'hr_burner' returns negative, 'temperature_gas' is set to increase 'temperature_deviation_increment' for each
+      subiteration.
+    - Since 'temperature_gas' can deviate from 'temperature_gas_target', warning message will be displaced if
+      'temperature_gas' ever go beyond 'warning_max_temperature'.
+    - Fixed various problems during the development of this functionality.
+* Fixed the scaling effect of 'time_step' to simulation results.
+* Implemented heat flux and exposure time dependent timber charring rate.
+
+
+01/04/2017 Friday
+Version 0.09
+* compare results with available data:
+    - model estimated fuel requirement is significantly less than the experimental results
+    - model simulation has 0.00% O2 after burning
+    - to achieve the experimental fuel consumption, the energy loss (total) has to be around 3.0 - 3.5 MJ
+* new ventilation code is written to take accound of heat loss to internal gas.
+* able to change enclosure internal gas pressure at a constant value.
+* concluding after comparing with experimental results and improvements to the codes:
+    - Model now estimate a steady state total heat loss rate of just under 3 [MJ]. This agree with the experimental data.
+    - Model generates always increasing total heat loss rate. The experimental result shows otherwise.
+
+
+23/03/2017 Thursday
+Version 0.08
+* Furnace O2 content - furnace is always supplied with enough O2 for spectrometric combustion of the burner;
+  extra O2 is supplied in addition to the existing supplied O2 with a factor "ventilation_excess_modifier". e.g. if 1 kg
+  O2 is required, then 1kg * ventilation_excess_modifier of O2 is actually supplied to the furnace.
+* New timber charring correlation takes account of O2 content.
+* Timber combustion heat release is now assessed based on both charring rate and O2 available, whichever is smaller -
+  e.g. 'hr_specimen_combustion = np.min{hr_specimen_combustion_charring, hr_specimen_combustion_o2}'
+
+
+22/03/2017 Wednesday
+Version 0.07
+* Implement specimen energy loss rate (finite difference).
+* Timber thermal properties are now temperature dependent, following data provided in Eurocode 5.
+* Implement specimen (timber) burning rate based on heat flux.
+
+
+09/03/2017 Thursday
+Version 0.06
+* Addresses energy loss to ventilation, considers energy loss to different species.
+* Specific heat capacity for gas is now temperature dependent.
+* Solves numerical output format issue. It previously only output values of the first couple of time steps, which is caused by lining temperature is stored as a 2D list rather than 1D array.
+* Refined time step calculation sequence. Changed few cases that how dependent variables were obtained [i-1] to [i].
+* More numerical variables (specific heat, volumetric outlet and intake etc.) can be find in the output file.
+* More plots are generated to address varies new variables.
+
+
+02/03/2017 Thursday
+Version 0.05
+* Time step can be any positive value.
+* Estimates o2 requirements for both burner and specimen combustion.
+* Ventilation air (inlet) is calculated based on o2 requirement.
+* Lining material property constructor is refined for better calculation performance.
+
+
+27/02/2017 Monday
+Version 0.04
+* New 1d finite difference function is implemented. The new function is more generalised and can be customised to different boundary heat transfer conducitivity (i.e. k_in and k_ou).
+
+
+07/02/2017 Tuesday
+Version 0.03
+* Able to address energy loss to window (radiation)
+
+
+30/12/2016 Thursday
+Version 0.02
+* Fixed incorrect unit of conductive heat transfer of linings.
+
+
+29/12/2016 Thursday
+Version 0.01
+Previous inspection shows incorrect units on the output figure. Total energy loss is shown about 500 J/s which is obviously too small in comparison with Josh's model. Also, 500 J/s is only equivalent to energy output of 8 candles (https://www.nist.gov/%3Cfront%3E/fire-dynamics).
+Specific heat of air function used was incorrect, it returns in kJ/kg/K but used as J/kg/K. The function is modified to return in J/kg/K.
+gamma_i used in energy loss via lining was incorrectly written. The correct form is gamma_i = emissivity * sigma * (gas_temperature^4 - lining_temperature^4) / (gas_temperature - lining_temperature) + 0.023. The term with to the power of 4 was being divided instead multiplied.
