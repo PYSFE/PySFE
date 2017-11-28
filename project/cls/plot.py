@@ -21,6 +21,8 @@ class Scatter2D(object):
         self._figure = plt.figure()
         self._axes = []
         self._lines = []
+        self._vlines = []
+        self._hlines = []
         self._texts = []
         self._format = None
 
@@ -58,6 +60,14 @@ class Scatter2D(object):
             line = self._axes[0].plot(x, y, label=label)
 
         self._lines.append(line[0])
+
+    def plot_vertical_line(self, x, line_color="black", line_linewidth=1):
+        l = self._axes[0].axvline(x=x, color=line_color, linewidth=line_linewidth)
+        self._vlines.append(l)
+
+    def plot_horizontal_line(self, y, line_color="black", line_linewidth=1):
+        l = self._axes[0].axhline(y=y, color=line_color, linewidth=line_linewidth)
+        self._hlines.append(l)
 
     def format(self, **kwargs):
         def map_dictionary(list_, dict_master):

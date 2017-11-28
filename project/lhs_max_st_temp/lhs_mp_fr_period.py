@@ -22,11 +22,11 @@ def worker(arg):
 
 def step0_parse_input_files(dir_work):
 
-    list_files = list_all_files_with_suffix(dir_work, ".txt", is_full_dir=False)
+    list_files = list_all_files_with_suffix(dir_work, ".txt", is_full_dir=True)
 
     list_input_files = []
     for f_ in list_files:
-        with open("/".join([dir_work, f_]), "r") as f__:
+        with open(f_, "r") as f__:
             l = f__.readline()
         if l.find("# MC INPUT FILE") > -1:
             list_input_files.append(f_)
@@ -34,7 +34,10 @@ def step0_parse_input_files(dir_work):
     return list_input_files
 
 
-def step1_inputs_maker(dir_work, file_name, n_sim, T_s_fix=273.15+620):
+def step1_inputs_maker(path_input_file, n_sim, T_s_fix=273.15+620):
+
+    file_name = os.path.basename(path_input_file)
+    dir_work = os.path.dirname(path_input_file)
     key_ = file_name.split(".")[0]
     dir_input_file = "/".join([dir_work, file_name])
     dir_kwargs_file = "{}/{} - {}".format(dir_work, key_, "in_main_calc.p")
@@ -50,7 +53,11 @@ def step1_inputs_maker(dir_work, file_name, n_sim, T_s_fix=273.15+620):
     pdump(list_kwargs, open(dir_kwargs_file, "wb"))
 
 
-def step2_main_calc(dir_work, kwargs_file_name, n_proc=0, progress_print_interval=1):
+def step2_main_calc(path_input_file, n_proc=0, progress_print_interval=1):
+
+    dir_work = os.path.dirname(path_input_file)
+    kwargs_file_name = os.path.basename(path_input_file)
+
     # Load kwargs
     dir_kwargs_file = "/".join([dir_work, kwargs_file_name])
     list_kwargs = pload(open(dir_kwargs_file, "rb"))
@@ -103,7 +110,10 @@ def step2_main_calc(dir_work, kwargs_file_name, n_proc=0, progress_print_interva
     pdump(df_outputs, open(dir_results_file, "wb"))
 
 
-def step3_results_numerical(dir_work, obj_file_name):
+def step3_results_numerical(path_input_file):
+
+    dir_work = os.path.dirname(path_input_file)
+    obj_file_name = os.path.basename(path_input_file)
 
     # Obtain ID string
     id_ = obj_file_name.split(" - ")[0]
@@ -119,7 +129,10 @@ def step3_results_numerical(dir_work, obj_file_name):
     df_results.to_csv(dir_csv_file, index=True, sep=",")
 
 
-def step4_results_visulisation(dir_work, obj_file_name, height_building):
+def step4_results_visulisation(path_input_file, height_building):
+
+    dir_work = os.path.dirname(path_input_file)
+    obj_file_name = os.path.basename(path_input_file)
 
     # Obtain ID string
     id_ = obj_file_name.split(" - ")[0]
@@ -148,14 +161,63 @@ def step4_results_visulisation(dir_work, obj_file_name, height_building):
     plt.format(**{"figure_size_scale": 0.7, "axis_lim_y1": (0, 1), "axis_lim_x": (0, 120), "legend_is_shown": False, "axis_label_x": "Time Equivalence [min]", "axis_label_y1": "Fractile", "marker_size": 0})
 
     # plt.update_line_format("Interpolated CDF", **{"line_width": 0.5, "color": "black", "line_style": ":"})
-    x_found, y_found = xy_found[0, :]
-    plt.axes_primary.axvline(x=x_found/60., color="black", linewidth=1)
-    plt.axes_primary.axhline(y=y_found, color="black", linewidth=1)
-    plt.axes_primary.text(x=x_found/60+1, y=y_found-0.01, s="({:.0f}, {:.4f})".format(x_found/60, y_found), va="top", ha="left", fontsize=6)
+    for i in np.arange(0, len(xy_found), 1):
+        x_found, y_found = xy_found[i, :]
+        plt.plot_vertical_line(x=x/60.)
+        plt.plot_horizontal_line(y=y_found)
+        plt.axes_primary.text(x=x_found/60+1, y=y_found-0.01, s="({:.0f}, {:.4f})".format(x_found/60, y_found), va="top", ha="left", fontsize=6)
     # plt.update_legend(legend_loc=0)
     plt.save_figure(file_name=" - ".join([id_, "res_plot"]), file_format=".pdf", dir_folder=dir_work)
 
     print("POST PROCESSING COMPLETE")
+
+
+def step5_results_visulisation2(dir_work, height_building):
+    # get all file names within 'dir_work' directory
+    results_files = list_all_files_with_suffix(dir_work, " - res_df.p", is_full_dir=False)
+
+    # proceed only if there are more than one files
+    if len(results_files) == 1:
+        print("Assembled visualisation aborted.")
+        return 0
+
+    # get all x and y values, and plot
+    x, y, x_, y_ = [], [], [], 1 - 64.8 / height_building ** 2
+    plt = Scatter2D()
+    plt_format = {"figure_size_scale": 0.7,
+                  "axis_lim_y1": (0, 1),
+                  "axis_lim_x": (0, 120),
+                  "legend_is_shown": True,
+                  "axis_label_x": "Time Equivalence [min]",
+                  "axis_label_y1": "Fractile",
+                  "marker_size": 0}
+
+    for dir_obj_file in results_files:
+        # load obj from given file path
+        path_obj_file = "{}/{}".format(dir_work, dir_obj_file)
+        df_results = pload(open(path_obj_file, "rb"))
+
+        # resolve x_value into x y and horizontal and vertical lines
+        x_value = df_results["TIME EQUIVALENCE [min]"].values * 60.
+        x1, y1, x_1, y_1, xy__1 = mc_post_processing(x_value, y_find=[y_])
+
+        xx, yy = xy__1[0, :]
+
+        x.append(x1)
+        y.append(y1)
+        x_.append(xx)
+
+        # plot this line
+        id_ = dir_obj_file.split(" - ")[0]
+        plt.plot2(x1/60, y1, id_)
+        plt.plot_horizontal_line(y=yy)
+        plt.plot_vertical_line(x=xx)
+
+    plt.format(**plt_format)
+
+
+def step6_fire_curves_pick():
+    pass
 
 
 if __name__ == "__main__":
@@ -174,6 +236,8 @@ if __name__ == "__main__":
         print(f)
         id_ = f.split(".")[0]
         step1_inputs_maker(project_full_path, f, simulations)
-        step2_main_calc(project_full_path, ff.format(id_, "in_main_calc.p"), 0, 5)
-        step3_results_numerical(project_full_path, ff.format(id_, "res_df.p"))
-        step4_results_visulisation(project_full_path, ff.format(id_, "res_df.p"), 60)
+        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "in_min_calc.p")), 0, 5)
+        step3_results_numerical(os.path.join(project_full_path, ff.format(id_,"res_df.p")))
+        step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")), building_height)
+
+    step5_results_visulisation2(project_full_path, building_height)
