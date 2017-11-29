@@ -185,6 +185,10 @@ def step5_results_visulisation2(dir_work, height_building):
                   "axis_label_x": "Time Equivalence [min]",
                   "axis_label_y1": "Fractile",
                   "marker_size": 0}
+    plt_text_format = dict(va="center",
+                           ha="center",
+                           fontsize=6,
+                           bbox=dict(boxstyle="square", fc="w", ec="k"))
 
     for dir_obj_file in results_files:
         # load obj from given file path
@@ -207,13 +211,13 @@ def step5_results_visulisation2(dir_work, height_building):
         plt.plot_horizontal_line(y=yy)
         plt.plot_vertical_line(x=xx/60.)
 
-        plt.axes_primary.text(x=xx/60.+0.5, y=+0.005, s="{:.0f}".format(xx/60.), va="baseline", ha="left", fontsize=6)
+        plt.axes_primary.text(x=xx/60., y=+0.03, s="{:.0f}".format(xx/60.), **plt_text_format)
 
-    plt.axes_primary.text(x=0+0.5, y=yy-0.005, s="{:.4f}".format(yy), va="top", ha="left", fontsize=6)
+    plt.axes_primary.text(x=5, y=yy, s="{:.4f}".format(yy), **plt_text_format)
 
     plt.format(**plt_format)
 
-    plt.save_figure(dir_folder=dir_work)
+    plt.save_figure(dir_folder=dir_work, file_name=os.path.basename(dir_work), file_format=".png")
 
 
 def step6_fire_curves_pick():
@@ -224,8 +228,8 @@ if __name__ == "__main__":
     # SETTINGS
     simulations = 2500
     steel_temperature_to_fix = 273.15 + 620
-    building_height = 60
-    project_full_path = r"C:/Users/Ian Fu/Dropbox (OFR-UK)/Bicester_team_projects/Live_projects/Symons House/Time Equivalence Analysis/calc 1 - n5000"
+    building_height = 40
+    project_full_path = r"C:\Users\ian\Dropbox\pp work\test files for mc\calc 1 - n2500_1"
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)
@@ -233,10 +237,10 @@ if __name__ == "__main__":
     ff = "{} - {}"
     for f in list_files:
         print(f)
-        id_ = f.split(".")[0]
-        step1_inputs_maker(f, simulations)
-        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "in_main_calc.p")), 0, 5)
-        step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
-        step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")), building_height)
+        # id_ = f.split(".")[0]
+        # step1_inputs_maker(f, simulations)
+        # step2_main_calc(os.path.join(project_full_path, ff.format(id_, "in_main_calc.p")), 6, 5)
+        # step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
+        # step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")), building_height)
 
     step5_results_visulisation2(project_full_path, building_height)
