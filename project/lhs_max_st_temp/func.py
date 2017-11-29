@@ -306,6 +306,8 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inpu
     #   Set distribution mean and standard dev
     qfd_std = x["dist_s_fire_load_density"]  # Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
     qfd_mean = x["dist_m_fire_load_density"]  # Fire load density - Gumbel distribution - mean [MJ/sq.m]
+    qfd_ubound = x["dist_u_fire_load_density"]  # Fire load density - Gumbel distribution - upper limit [MJ/sq.m]
+    qfd_lbound = x["dist_l_fire_load_density"]  # Fire load density - Gumbel distribution - lower limit [MJ/sq.m]
     glaz_min = x["dist_l_glazing_break_percentage"]  # Min glazing fall-out fraction [-] - Linear dist
     glaz_max = x["dist_u_glazing_break_percentage"]  # Max glazing fall-out fraction [-]  - Linear dist
     beam_min = x["dist_l_beam_location"]  # Min beam location relative to compartment length for TFM [-]  - Linear dist
@@ -317,7 +319,8 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inpu
     avg_nft = x["dist_m_near_field_temperature"]  # TFM near field temperature - Norm distribution - mean [C]
 
     #   Create random number array for each stochastic variable
-    list_random_numbers = [lhs(1, samples=lhs_iterations).flatten() for r in range(6)]
+    def random_numbers_lhs(n=lhs_iterations, l_lim=0, u_lim=1):
+        return lhs(1, samples=n).flatten() * (u_lim - l_lim) + l_lim
 
     #   Calculate gumbel parameters
     qfd_scale = (qfd_std * (6 ** 0.5)) / np.pi
@@ -327,16 +330,20 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inpu
     std_nft = (1.939 - (np.log(avg_nft) * 0.266)) * avg_nft
 
     #   Convert LHS probabilities to distribution invariants
-    comb_lhs = linear_distribution(com_eff_min, com_eff_max, list_random_numbers[0])
-    qfd_lhs = gumbel_r(loc=qfd_loc, scale=qfd_scale).ppf(list_random_numbers[1]) * comb_lhs
-    glaz_lhs = linear_distribution(glaz_min, glaz_max, list_random_numbers[2])
-    beam_lhs = linear_distribution(beam_min, beam_max, list_random_numbers[3]) * x["room_depth"]
-    spread_lhs = linear_distribution(spread_min, spread_max, list_random_numbers[4])
-    nft_lhs = norm(loc=avg_nft, scale=std_nft).ppf(list_random_numbers[5])
+    comb_lhs = linear_distribution(com_eff_min, com_eff_max, random_numbers_lhs())
+    qfd_dist = gumbel_r(loc=qfd_loc, scale=qfd_scale)
+    qfd_p_l, qfd_p_u = qfd_dist.cdf(qfd_lbound), qfd_dist.cdf(qfd_ubound)
+    qfd_lhs = gumbel_r(loc=qfd_loc, scale=qfd_scale).ppf(random_numbers_lhs(l_lim=qfd_p_l, u_lim=qfd_p_u)) * comb_lhs
+    glaz_lhs = linear_distribution(glaz_min, glaz_max, random_numbers_lhs())
+    beam_lhs = linear_distribution(beam_min, beam_max, random_numbers_lhs()) * x["room_depth"]
+    spread_lhs = linear_distribution(spread_min, spread_max, random_numbers_lhs())
+    nft_lhs = norm(loc=avg_nft, scale=std_nft).ppf(random_numbers_lhs())
 
     # delete these items as they are nolonger used and will cause error if passed on
     del x["dist_s_fire_load_density"]  # Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
     del x["dist_m_fire_load_density"]  # Fire load density - Gumbel distribution - mean [MJ/sq.m]
+    del x["dist_u_fire_load_density"]  # Fire load density - Gumbel distribution - upper limit [MJ/sq.m]
+    del x["dist_l_fire_load_density"]  # Fire load density - Gumbel distribution - lower limit [MJ/sq.m]
     del x["dist_l_glazing_break_percentage"]  # Min glazing fall-out fraction [-] - Linear dist
     del x["dist_u_glazing_break_percentage"]  # Max glazing fall-out fraction [-]  - Linear dist
     del x["dist_l_beam_location"]  # Min beam location relative to compartment length for TFM [-]  - Linear dist
@@ -349,6 +356,8 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inpu
 
     list_inputs = []
     for i in range(0, lhs_iterations):
+        if qfd_lbound > qfd_lhs[i] > qfd_ubound:  # Fire load density is outside limits
+            continue
         x_ = x.copy()
         x_.update({"window_open_fraction": glaz_lhs[i],
                    "fire_load_density": qfd_lhs[i],

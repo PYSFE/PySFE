@@ -38,14 +38,13 @@ def step1_inputs_maker(path_input_file, n_sim, T_s_fix=273.15+620):
 
     file_name = os.path.basename(path_input_file)
     dir_work = os.path.dirname(path_input_file)
-    key_ = file_name.split(".")[0]
-    dir_input_file = "/".join([dir_work, file_name])
-    dir_kwargs_file = "{}/{} - {}".format(dir_work, key_, "in_main_calc.p")
+    id_ = file_name.split(".")[0]
+    dir_kwargs_file = os.path.join(dir_work, "{} - {}".format(id_, "in_main_calc.p"))
     fire = standard_fire(np.arange(0, 3*60*60, 1), 273.15+20)
     inputs_extra = {"beam_temperature_goal": T_s_fix,
                     "iso834_time": fire[0],
                     "iso834_temperature": fire[1],}
-    list_kwargs = mc_inputs_generator(n_sim, inputs_extra, dir_input_file)
+    list_kwargs = mc_inputs_generator(n_sim, inputs_extra, path_input_file)
 
     # todo: Check if file path that kwargs goes in already exits, delete if it already exist.
 
@@ -59,8 +58,7 @@ def step2_main_calc(path_input_file, n_proc=0, progress_print_interval=1):
     kwargs_file_name = os.path.basename(path_input_file)
 
     # Load kwargs
-    dir_kwargs_file = "/".join([dir_work, kwargs_file_name])
-    list_kwargs = pload(open(dir_kwargs_file, "rb"))
+    list_kwargs = pload(open(path_input_file, "rb"))
 
     # Identify the id string
     id_ = kwargs_file_name.split(" - ")[0]
@@ -106,8 +104,8 @@ def step2_main_calc(path_input_file, n_proc=0, progress_print_interval=1):
     df_outputs.sort_values(by=["TIME EQUIVALENCE [min]"], inplace=True)
     df_outputs.reset_index(drop=True, inplace=True)
 
-    dir_results_file = "{}/{} - {}".format(dir_work, id_, "res_df.p")
-    pdump(df_outputs, open(dir_results_file, "wb"))
+    path_results_file = os.path.join(dir_work, "{} - {}".format(id_, "res_df.p"))
+    pdump(df_outputs, open(path_results_file, "wb"))
 
 
 def step3_results_numerical(path_input_file):
@@ -119,11 +117,10 @@ def step3_results_numerical(path_input_file):
     id_ = obj_file_name.split(" - ")[0]
 
     # Obtain full directory of the dataframe obj file
-    dir_obj_file = "{}/{} - {}".format(dir_work, id_, "res_df.p")
-    dir_csv_file = "{}/{} - {}".format(dir_work, id_, "res_num.csv")
+    dir_csv_file = os.path.join(dir_work, "{} - {}".format(id_, "res_num.csv"))
 
     # Load the dataframe obj file
-    df_results = pload(open(dir_obj_file, "rb"))
+    df_results = pload(open(path_input_file, "rb"))
 
     # Save the dataframe to csv file
     df_results.to_csv(dir_csv_file, index=True, sep=",")
@@ -137,11 +134,8 @@ def step4_results_visulisation(path_input_file, height_building):
     # Obtain ID string
     id_ = obj_file_name.split(" - ")[0]
 
-    # Obtain full directory of the dataframe obj file
-    dir_obj_file = "{}/{} - {}".format(dir_work, id_, "res_df.p")
-
     # Load the dataframe obj file
-    df_results = pload(open(dir_obj_file, "rb"))
+    df_results = pload(open(path_input_file, "rb"))
 
     # Obtain time equivalence, in minutes, as x-axis values
     x = df_results["TIME EQUIVALENCE [min]"].values * 60.
@@ -163,7 +157,7 @@ def step4_results_visulisation(path_input_file, height_building):
     # plt.update_line_format("Interpolated CDF", **{"line_width": 0.5, "color": "black", "line_style": ":"})
     for i in np.arange(0, len(xy_found), 1):
         x_found, y_found = xy_found[i, :]
-        plt.plot_vertical_line(x=x/60.)
+        plt.plot_vertical_line(x=x_found/60.)
         plt.plot_horizontal_line(y=y_found)
         plt.axes_primary.text(x=x_found/60+1, y=y_found-0.01, s="({:.0f}, {:.4f})".format(x_found/60, y_found), va="top", ha="left", fontsize=6)
     # plt.update_legend(legend_loc=0)
@@ -194,7 +188,7 @@ def step5_results_visulisation2(dir_work, height_building):
 
     for dir_obj_file in results_files:
         # load obj from given file path
-        path_obj_file = "{}/{}".format(dir_work, dir_obj_file)
+        path_obj_file = os.path.join(dir_work, dir_obj_file)
         df_results = pload(open(path_obj_file, "rb"))
 
         # resolve x_value into x y and horizontal and vertical lines
@@ -211,9 +205,15 @@ def step5_results_visulisation2(dir_work, height_building):
         id_ = dir_obj_file.split(" - ")[0]
         plt.plot2(x1/60, y1, id_)
         plt.plot_horizontal_line(y=yy)
-        plt.plot_vertical_line(x=xx)
+        plt.plot_vertical_line(x=xx/60.)
+
+        plt.axes_primary.text(x=xx/60.+0.5, y=+0.005, s="{:.0f}".format(xx/60.), va="baseline", ha="left", fontsize=6)
+
+    plt.axes_primary.text(x=0+0.5, y=yy-0.005, s="{:.4f}".format(yy), va="top", ha="left", fontsize=6)
 
     plt.format(**plt_format)
+
+    plt.save_figure(dir_folder=dir_work)
 
 
 def step6_fire_curves_pick():
@@ -222,22 +222,21 @@ def step6_fire_curves_pick():
 
 if __name__ == "__main__":
     # SETTINGS
-    simulations = 100
+    simulations = 2500
     steel_temperature_to_fix = 273.15 + 620
     building_height = 60
-    project_full_path = "C:/Users/Ian Fu/Dropbox (OFR-UK)/Bicester_team_projects/Live_projects/Symons House/Time Equivalence Analysis/calc"
+    project_full_path = r"C:/Users/Ian Fu/Dropbox (OFR-UK)/Bicester_team_projects/Live_projects/Symons House/Time Equivalence Analysis/calc 1 - n5000"
 
     # ROUTINES
+    project_full_path = os.path.abspath(project_full_path)
     list_files = step0_parse_input_files(dir_work=project_full_path)
-    # list_files = [list_files[1]]
     ff = "{} - {}"
-
     for f in list_files:
         print(f)
         id_ = f.split(".")[0]
-        step1_inputs_maker(project_full_path, f, simulations)
-        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "in_min_calc.p")), 0, 5)
-        step3_results_numerical(os.path.join(project_full_path, ff.format(id_,"res_df.p")))
+        step1_inputs_maker(f, simulations)
+        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "in_main_calc.p")), 0, 5)
+        step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
         step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")), building_height)
 
     step5_results_visulisation2(project_full_path, building_height)

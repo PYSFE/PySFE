@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-import Spatial
+import project.zone_model_1.Spatial as Spatial
 import triangle
 
 
@@ -78,7 +78,7 @@ class Surface(object):
             z_value = z_value[2]
         else:
             z_values = None
-            print "!!!WARNING!!! NOT PARALLEL TO XY PLANE."
+            print("!!!WARNING!!! NOT PARALLEL TO XY PLANE.")
         self.zValue = z_value
 
         # log new vertices in 2D

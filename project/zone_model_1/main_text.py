@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import time
-from CALCS.FurnaceModel import *
-from CTS.CTS import write_list_to_csv as write_data
-from CTS.CTS import PlotScatter2D
-from CTS.CTS import list_all_files_with_suffix
+from project.zone_model_1.CALCS.FurnaceModel import *
+from project.zone_model_1.CTS.CTS import write_list_to_csv as write_data
+from project.zone_model_1.CTS.CTS import PlotScatter2D
+from project.zone_model_1.CTS.CTS import list_all_files_with_suffix
 import re
 import os
 import multiprocessing

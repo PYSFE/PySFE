@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import time
-from CALCS.FurnaceModel import *
-from CTS.CTS import write_list_to_csv as write_data
-from CTS.CTS import PlotScatter2D
-from CTS.CTS import list_all_files_with_suffix
+from project.zone_model_1.CALCS.FurnaceModel import *
+from project.zone_model_1.CTS.CTS import write_list_to_csv as write_data
+from project.zone_model_1.CTS.CTS import PlotScatter2D
+from project.zone_model_1.CTS.CTS import list_all_files_with_suffix
 import re
 import os
 import multiprocessing
@@ -25,7 +25,7 @@ def input_file_selection(folder_dir):
 
     # assign selected input file
     if len(input_files_list) > 1:
-        selected_file_no = int(raw_input("Please select input file (-1 to select all): "))
+        selected_file_no = int(input("Please select input file (-1 to select all): "))
     else:
         print("Please select input file (-1 to select all): 0")
         selected_file_no = 0
@@ -277,7 +277,7 @@ def plot_graphs(plot_data, folder_dir, file_suffix, default_format, suppress_vie
         figs.append(fig)
 
     if not suppress_viewing:
-        raw_input("Enter any key to close and save plots and finish the model.")
+        input("Enter any key to close and save plots and finish the model.")
 
     for i, v in enumerate(figs):
         v.save_figure(
@@ -335,11 +335,11 @@ def wrapped_all_calcs(input_text_dict):
             ]
             print(data_collected)
 
-            f = open('C:\Users\ian\Dropbox\ED\Final Thesis 5\EnclosureFire\OUTPUTS\genesis\~master_collector.csv', 'a')
+            f = open('C:/Users/ian/Dropbox/ED/Final Thesis 5/EnclosureFire/OUTPUTS/genesis/~master_collector.csv', 'a')
             f.write(','.join(data_collected))
             f.close()
     else:
-        print status
+        print(status)
 
     default_format = {
         "figure_size_width": 4,

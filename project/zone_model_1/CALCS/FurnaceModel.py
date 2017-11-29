@@ -2,10 +2,10 @@
 # Calc Version: 1.00
 
 import numpy as np
-from CTS import CTS
-from CTS import FireCurves
-from CTS import FireDynamics
-from CTS.FireDynamics import gaseous_chamber_ambient_pressure
+from project.zone_model_1.CTS import CTS
+from project.zone_model_1.CTS import FireCurves
+from project.zone_model_1.CTS import FireDynamics
+from project.zone_model_1.CTS.FireDynamics import gaseous_chamber_ambient_pressure
 from scipy.interpolate import interp1d
 
 
@@ -258,7 +258,7 @@ def main_function(
                 dT = dT_dt * time_step
                 temperature_specimen[i, :] = temperature_specimen[i-1, :] + dT
                 if temperature_specimen[i, 0] > temperature_gas[i]:
-                    print "Specimen temperature > gas temperature at " + str(i)
+                    print("Specimen temperature > gas temperature at " + str(i))
                 # Calculate energy loss rate to lining.
                 hr_specimen_loss[i] = specimen_exposed_area * (inner_temperature - temperature_specimen[i, 0]) / (1 / inner_conductivity + 0.5 * specimen_thickness_arr[0] / specimen_thermal_conductivity_arr[0])
                 hr_specimen_loss[i] = - hr_specimen_loss[i]
@@ -564,7 +564,7 @@ def combustion_chemistry(energy_required_joule, fuel_type_str, molecule_type_str
     elif molecule_type_str == "H2O produced":
         dict_to_use = dict_h2o_produce
     else:
-        print "Warning: Invalid molecule_str name."
+        print("Warning: Invalid molecule_str name.")
 
     return energy_required_joule / dict_to_use[fuel_type_str]  # [kg]
 
@@ -676,5 +676,5 @@ def print_debug_information(form_str, values_arr, soffit_str=""):
     output_string = soffit_str + "\n"
     for each_entry in values_arr:
         output_string += form_str.format(*each_entry)
-    print output_string
+    print(output_string)
     return output_string
