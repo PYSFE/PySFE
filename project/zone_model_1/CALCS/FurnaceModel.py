@@ -464,8 +464,16 @@ def timber_charring_rate_babrauskas2005(average_heat_flux, timber_density, expos
 # NOTE:
 # inert boundary - make inner_conductivity = 0.5 * x[0] / k[0] or outer_conductivity = 0.5 * x[n] / k[n]
 def heat_transfer_general_1d_finite_difference(
-        layers_conductivity, layers_density, layers_specific_heat, layers_temperature, layers_thickness, time_step,
-        inner_conductivity, inner_temperature, outer_conductivity, outer_temperature
+        layers_conductivity,
+        layers_density,
+        layers_specific_heat,
+        layers_temperature,
+        layers_thickness,
+        time_step,
+        inner_conductivity,
+        inner_temperature,
+        outer_conductivity,
+        outer_temperature
 ):
     # =================================================== PERMEABLE ====================================================
     # refactor parameters for readability
