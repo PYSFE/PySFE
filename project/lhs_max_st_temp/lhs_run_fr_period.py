@@ -34,15 +34,15 @@ def get_max_st_temp(tsec,temps,rho,c,Ap,kp,rhop,cp,dp,Hp):
 
 #   Define the inputs
 
-lhs_iterations = 100
+lhs_iterations = 1000
 
 #   Compartment dimensions
 
-breadth = 6
-depth = 12
-height = 2.78
-win_width = 7.1
-win_height = 2.33
+breadth = 13.7
+depth = 25.5
+height = 3.0
+win_width = 62
+win_height = 2.8
 
 #   Deterministic fire inputs
 
@@ -50,26 +50,25 @@ t_start = 0
 limit_time = 0.333
 inertia = 720
 fire_dur = 18000
-time_step = 30
+time_step = 15
 hrr_pua = 0.25
 
 #   Section properties
 
 Hp = 2.14
 Ap = 0.017
-dp = 0.0125
 kp = 0.2
 rhop = 800
 cp = 1700
 
 #   Set distribution mean and standard dev
 
-qfd_std = 234
-qfd_mean = 780
+qfd_std = 126
+qfd_mean = 420
 glaz_min = 0.1
 glaz_max = 0.999
 beam_min = 0.6
-beam_max = 0.9
+beam_max = 0.99
 com_eff_min = 0.75
 com_eff_max = 0.999
 spread_min = 0.0035
@@ -173,7 +172,7 @@ for i in range(0,lhs_iterations):
         fmstr = "Travelling"
 
     print("LHS_model_realisation_count =", i + 1, "Of", lhs_iterations)
-    print("Qfd =", fled, "Opening size =", win_height, "x", win_width * open_frac, fmstr)
+    #   print("Qfd =", fled, "Opening size =", win_height, "x", win_width * open_frac, fmstr)
 
     #   Optional unprotected steel code
     #tempsteel, temprate, hf, c_s = ht. make_temperature_eurocode_unprotected_steel(tsec,temps+273.15,Hp,Ap,0.1,7850,c,35,0.625)
@@ -191,7 +190,7 @@ for i in range(0,lhs_iterations):
     # Search routine to find dp that corresponds with target limiting temperature
 
     while abserr > ok_error_c:
-        print("Iterations =", dp_iter)
+        #   print("Iterations =", dp_iter)
         dp_iter = dp_iter + 1
         dp3 = (dp1 + dp2) * 0.5
         max_temp, steelt = get_max_st_temp(tsec,temps,rho,c,Ap,kp,rhop,cp,dp3,Hp)
@@ -221,7 +220,7 @@ for i in range(0,lhs_iterations):
     fr_per = fr_ind(target_tem)
     fr_out.append(fr_per / 60)
 
-    print("FR =", fr_per/60)
+    #   print("FR =", fr_per/60)
 
 #   Sort output array at the end to get CPD of steel temperatures
 
