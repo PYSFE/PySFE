@@ -226,10 +226,10 @@ def step6_fire_curves_pick():
 
 if __name__ == "__main__":
     # SETTINGS
-    simulations = 100
+    simulations = 2500
     steel_temperature_to_fix = 273.15 + 620
     building_height = 40
-    project_full_path = r"C:\Users\Danny Hopkin\Desktop\Test"
+    project_full_path = r"C:\Users\ian\Dropbox\pp work\test files for mc\calc 1 - n2500_1"
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)
