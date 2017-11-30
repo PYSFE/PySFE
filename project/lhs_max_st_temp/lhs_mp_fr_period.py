@@ -237,10 +237,10 @@ if __name__ == "__main__":
     ff = "{} - {}"
     for f in list_files:
         print(f)
-        # id_ = f.split(".")[0]
-        # step1_inputs_maker(f, simulations)
-        # step2_main_calc(os.path.join(project_full_path, ff.format(id_, "in_main_calc.p")), 6, 5)
-        # step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
-        # step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")), building_height)
+        id_ = f.split(".")[0]
+        step1_inputs_maker(f, simulations)
+        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "in_main_calc.p")), 6, 5)
+        step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
+        step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")), building_height)
 
     step5_results_visulisation2(project_full_path, building_height)

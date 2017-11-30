@@ -1,0 +1,53 @@
+# MC INPUT FILE
+
+
+# ------------------------------------------------------------------------------------------------------------------
+#   Compartment dimensions all in [m]
+# ------------------------------------------------------------------------------------------------------------------
+
+room_breadth = 13.3                     # Room breadth [m]
+room_depth = 17                       	# Room depth [m]
+room_height = 3.0                       # Room height [m]
+window_width = 47.4                		# Window width [m]
+window_height = 3.3                     # Window height [m]
+
+# ------------------------------------------------------------------------------------------------------------------
+#   Deterministic fire inputs
+# ------------------------------------------------------------------------------------------------------------------
+
+time_start = 0                          # Start time of simulation [s]
+time_limiting = 0.333                   # Limiting time for fuel controlled case in EN 1991-1-2 parametric fire [hr]
+room_wall_thermal_inertia = 720         # Compartment thermal inertia [J/m2s1/2K]
+fire_duration = 18000                   # Maximum time in time array [s]
+time_step = 30                          # Time step used for fire and heat transfer [s]
+fire_hrr_density = 0.25                 # HRR density [MW/sq.m]
+
+# ------------------------------------------------------------------------------------------------------------------
+#   Section properties for heat transfer evaluation
+# ------------------------------------------------------------------------------------------------------------------
+
+protection_protected_perimeter = 2.14   # Heated perimeter [m]
+beam_cross_section_area = 0.017         # Cross section area [sq.m]
+beam_rho = 7850							# Density [kg/m3]
+protection_thickness = 0.0125           # Thickness of protection [m]
+protection_k = 0.2                      # Protection conductivity [W/m.K]
+protection_rho = 800                    # Density of protection [kg/cb.m]
+protection_c = 1700                     # Specific heat of protection [J/kg.K]
+
+# ------------------------------------------------------------------------------------------------------------------
+#  Distributed variables
+# ------------------------------------------------------------------------------------------------------------------
+
+dist_s_fire_load_density = 190     		# Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
+dist_m_fire_load_density = 300       	# Fire load density - Gumbel distribution - mean [MJ/sq.m]
+dist_u_fire_load_density = 625  		# Fire load density - Gumbel distribution - upper limit [MJ/sq.m]
+dist_l_fire_load_density = 84  			# Fire load density - Gumbel distribution - lower limit [MJ/sq.m]
+dist_l_glazing_break_percentage = 0.1  	# Min glazing fall-out fraction - Linear dist
+dist_u_glazing_break_percentage = 0.999	# Max glazing fall-out fraction - Linear dist
+dist_l_beam_location = 0.6            	# Min beam location relative to compartment length for TFM [-] - Linear dist
+dist_u_beam_location = 0.9          	# Max beam location relative to compartment length for TFM [-] - Linear dist
+dist_l_combustion_efficiency = 0.75   	# Min combustion efficiency - Linear dist
+dist_u_combustion_effeciency = 0.999  	# Max combustion efficiency - Linear dist
+dist_l_fire_spread = 0.0035           	# Min spread rate for TFM [m/s] - Linear dist
+dist_u_fire_spread = 0.0193           	# Max spread rate for TFM [m/s] - Linear dist
+dist_m_near_field_temperature = 1050  	# TFM near field temperature - Norm distribution - mean [C]
