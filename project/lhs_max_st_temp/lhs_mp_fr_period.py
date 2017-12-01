@@ -34,34 +34,40 @@ def step0_parse_input_files(dir_work):
     return list_input_files
 
 
-def step1_inputs_maker(path_input_file, n_sim, T_s_fix=273.15+620):
+def step1_inputs_maker(path_input_file):
 
     file_name = os.path.basename(path_input_file)
     dir_work = os.path.dirname(path_input_file)
     id_ = file_name.split(".")[0]
-    dir_kwargs_file = os.path.join(dir_work, "{} - {}".format(id_, "in_main_calc.p"))
+    path_setting_file = os.path.join(dir_work, "{} - {}".format(id_, "prefs.p"))
+    path_variable_file = os.path.join(dir_work, "{} - {}".format(id_, "args_main.p"))
     fire = standard_fire(np.arange(0, 3*60*60, 1), 273.15+20)
-    inputs_extra = {"beam_temperature_goal": T_s_fix,
-                    "iso834_time": fire[0],
+    inputs_extra = {"iso834_time": fire[0],
                     "iso834_temperature": fire[1],}
-    list_kwargs = mc_inputs_generator(n_sim, inputs_extra, path_input_file)
+    list_kwargs, dict_settings = mc_inputs_generator(dict_extra_variables_to_add=inputs_extra,
+                                                     dir_file=path_input_file)
 
     # todo: Check if file path that kwargs goes in already exits, delete if it already exist.
 
     # Save list_kwargs as a pickle object.
-    pdump(list_kwargs, open(dir_kwargs_file, "wb"))
+    pdump(list_kwargs, open(path_variable_file, "wb"))
+    pdump(dict_settings, open(path_setting_file, "wb"))
 
 
 def step2_main_calc(path_input_file, n_proc=0, progress_print_interval=1):
 
+    # Make prefix, suffix, file and directory strings
     dir_work = os.path.dirname(path_input_file)
-    kwargs_file_name = os.path.basename(path_input_file)
+    name_kwargs_file = os.path.basename(path_input_file)
+    id_ = name_kwargs_file.split(" - ")[0]
 
     # Load kwargs
     list_kwargs = pload(open(path_input_file, "rb"))
 
-    # Identify the id string
-    id_ = kwargs_file_name.split(" - ")[0]
+    # Load settings
+    path_settings_file = os.path.join(dir_work, "{} - {}".format(id_, "prefs.p"))
+    dict_settings = pload(open(path_settings_file, "rb"))
+    n_proc = dict_settings["n_proc"]
 
     # Check number of processes are to be used
     n_proc = os.cpu_count() if int(n_proc) < 1 else int(n_proc)
@@ -109,30 +115,30 @@ def step2_main_calc(path_input_file, n_proc=0, progress_print_interval=1):
 
 
 def step3_results_numerical(path_input_file):
-
-    dir_work = os.path.dirname(path_input_file)
-    obj_file_name = os.path.basename(path_input_file)
-
-    # Obtain ID string
-    id_ = obj_file_name.split(" - ")[0]
-
-    # Obtain full directory of the dataframe obj file
-    dir_csv_file = os.path.join(dir_work, "{} - {}".format(id_, "res_num.csv"))
+    # Make prefix, suffix, file and directory strings
+    dir_cwd = os.path.dirname(path_input_file)
+    name_obj_file = os.path.basename(path_input_file)
+    id_ = name_obj_file.split(" - ")[0]
+    path_csv_file = os.path.join(dir_cwd, "{} - {}".format(id_, "res_num.csv"))
 
     # Load the dataframe obj file
     df_results = pload(open(path_input_file, "rb"))
 
     # Save the dataframe to csv file
-    df_results.to_csv(dir_csv_file, index=True, sep=",")
+    df_results.to_csv(path_csv_file, index=True, sep=",")
 
 
-def step4_results_visulisation(path_input_file, height_building):
+def step4_results_visulisation(path_input_file):
 
+    # Make file and directory names
     dir_work = os.path.dirname(path_input_file)
     obj_file_name = os.path.basename(path_input_file)
+    id_ = obj_file_name.split(" - ")[0]  # Obtain ID string
 
-    # Obtain ID string
-    id_ = obj_file_name.split(" - ")[0]
+    # Load settings
+    path_settings_file = os.path.join(dir_work, "{} - {}".format(id_, "prefs.p"))
+    dict_settings = pload(open(path_settings_file, "rb"))
+    height_building = dict_settings["building_height"]
 
     # Load the dataframe obj file
     df_results = pload(open(path_input_file, "rb"))
@@ -145,7 +151,10 @@ def step4_results_visulisation(path_input_file, height_building):
     # x = x[seek_status == 1]
 
     # Define horizontal line(s) to plot
-    y__ = 1 - 64.8 / height_building ** 2
+    if height_building > 0:
+        y__ = 1 - 64.8 / height_building ** 2
+    else:
+        y__ = 0.5
 
     x, y, x_, y_, xy_found = mc_post_processing(x, y_find=[y__])
 
@@ -155,18 +164,19 @@ def step4_results_visulisation(path_input_file, height_building):
     plt.format(**{"figure_size_scale": 0.7, "axis_lim_y1": (0, 1), "axis_lim_x": (0, 120), "legend_is_shown": False, "axis_label_x": "Time Equivalence [min]", "axis_label_y1": "Fractile", "marker_size": 0})
 
     # plt.update_line_format("Interpolated CDF", **{"line_width": 0.5, "color": "black", "line_style": ":"})
-    for i in np.arange(0, len(xy_found), 1):
-        x_found, y_found = xy_found[i, :]
-        plt.plot_vertical_line(x=x_found/60.)
-        plt.plot_horizontal_line(y=y_found)
-        plt.axes_primary.text(x=x_found/60+1, y=y_found-0.01, s="({:.0f}, {:.4f})".format(x_found/60, y_found), va="top", ha="left", fontsize=6)
-    # plt.update_legend(legend_loc=0)
+    if height_building > 0:
+        for i in np.arange(0, len(xy_found), 1):
+            x_found, y_found = xy_found[i, :]
+            plt.plot_vertical_line(x=x_found/60.)
+            plt.plot_horizontal_line(y=y_found)
+            plt.axes_primary.text(x=x_found/60+1, y=y_found-0.01, s="({:.0f}, {:.4f})".format(x_found/60, y_found), va="top", ha="left", fontsize=6)
+
     plt.save_figure(file_name=" - ".join([id_, "res_plot"]), file_format=".pdf", dir_folder=dir_work)
 
     print("POST PROCESSING COMPLETE")
 
 
-def step5_results_visulisation2(dir_work, height_building):
+def step5_results_visulisation_all(dir_work, height_building=None):
     # get all file names within 'dir_work' directory
     results_files = list_all_files_with_suffix(dir_work, " - res_df.p", is_full_dir=False)
 
@@ -176,7 +186,11 @@ def step5_results_visulisation2(dir_work, height_building):
         return 0
 
     # get all x and y values, and plot
-    x, y, x_, y_ = [], [], [], 1 - 64.8 / height_building ** 2
+    if height_building is not None:
+        x, y, x_, y_ = [], [], [], 1 - 64.8 / height_building ** 2
+    else:
+        x, y, x_, y_ = [], [], [], []
+
     plt = Scatter2D()
     plt_format = {"figure_size_scale": 0.7,
                   "axis_lim_y1": (0, 1),
@@ -208,12 +222,14 @@ def step5_results_visulisation2(dir_work, height_building):
         # plot this line
         id_ = dir_obj_file.split(" - ")[0]
         plt.plot2(x1/60, y1, id_)
-        plt.plot_horizontal_line(y=yy)
-        plt.plot_vertical_line(x=xx/60.)
 
-        plt.axes_primary.text(x=xx/60., y=+0.03, s="{:.0f}".format(xx/60.), **plt_text_format)
+        if height_building is not None:
+            plt.plot_horizontal_line(y=yy)
+            plt.plot_vertical_line(x=xx/60.)
+            plt.axes_primary.text(x=xx/60., y=+0.03, s="{:.0f}".format(xx/60.), **plt_text_format)
 
-    plt.axes_primary.text(x=5, y=yy, s="{:.4f}".format(yy), **plt_text_format)
+    if height_building is not None:
+        plt.axes_primary.text(x=5, y=yy, s="{:.4f}".format(yy), **plt_text_format)
 
     plt.format(**plt_format)
 
@@ -226,10 +242,7 @@ def step6_fire_curves_pick():
 
 if __name__ == "__main__":
     # SETTINGS
-    simulations = 10000
-    steel_temperature_to_fix = 273.15 + 620
-    building_height = 40
-    project_full_path = r"/Users/fuyans/Dropbox/pp work/test files for mc/calc 1 - n10000_n"
+    project_full_path = r"C:\Users\Ian Fu\Dropbox (OFR-UK)\Bicester_team_projects\Live_projects\A1_Canada_Water\time eq analysis\CALC"
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)
@@ -238,9 +251,9 @@ if __name__ == "__main__":
     for f in list_files:
         print(f)
         id_ = f.split(".")[0]
-        step1_inputs_maker(f, simulations)
-        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "in_main_calc.p")), 0, 5)
+        step1_inputs_maker(f)
+        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "args_main.p")), 0, 5)
         step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
-        step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")), building_height)
+        step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
 
-    step5_results_visulisation2(project_full_path, building_height)
+    step5_results_visulisation_all(project_full_path)
