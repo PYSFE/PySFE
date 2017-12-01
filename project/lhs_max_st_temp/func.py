@@ -12,6 +12,7 @@ from scipy.interpolate import interp1d
 from project.func.temperature_fires import parametric_eurocode1 as _fire_param
 from project.func.kwargs_from_text import kwargs_from_text
 from scipy import stats
+from project.func.tools_number import distribute_numbers_cartesian_product
 
 
 logging.basicConfig(filename="log.txt", level=logging.DEBUG)
@@ -277,7 +278,6 @@ def mc_fr_calculation(
 
 def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inputs.txt"):
     steel_prop = Thermal()
-    # dir_package = os.path.dirname(os.path.abspath(__file__))
 
     #   Handy interim functions
 
@@ -286,7 +286,6 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inpu
     #   Define the inputs
 
     lhs_iterations = simulation_count
-    standard_fire = standard_fire_iso834(np.arange(0, 36000+60, 20), 293.15)
 
     x = dict()
 
@@ -322,6 +321,9 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inpu
     def random_numbers_lhs(n=lhs_iterations, l_lim=0, u_lim=1):
         return lhs(1, samples=n).flatten() * (u_lim - l_lim) + l_lim
 
+    n = [int(lhs_iterations**(1/6))+1]
+    dist_numbers = distribute_numbers_cartesian_product(n*6)
+
     #   Calculate gumbel parameters
     qfd_scale = (qfd_std * (6 ** 0.5)) / np.pi
     qfd_loc = qfd_mean - (0.5722 * qfd_scale)
@@ -330,14 +332,23 @@ def mc_inputs_generator(simulation_count, dict_extra_inputs=None, dir_file="inpu
     std_nft = (1.939 - (np.log(avg_nft) * 0.266)) * avg_nft
 
     #   Convert LHS probabilities to distribution invariants
-    comb_lhs = linear_distribution(com_eff_min, com_eff_max, random_numbers_lhs())
+    # comb_lhs = linear_distribution(com_eff_min, com_eff_max, random_numbers_lhs())
+    # qfd_dist = gumbel_r(loc=qfd_loc, scale=qfd_scale)
+    # qfd_p_l, qfd_p_u = qfd_dist.cdf(qfd_lbound), qfd_dist.cdf(qfd_ubound)
+    # qfd_lhs = gumbel_r(loc=qfd_loc, scale=qfd_scale).ppf(random_numbers_lhs(l_lim=qfd_p_l, u_lim=qfd_p_u)) * comb_lhs
+    # glaz_lhs = linear_distribution(glaz_min, glaz_max, random_numbers_lhs())
+    # beam_lhs = linear_distribution(beam_min, beam_max, random_numbers_lhs()) * x["room_depth"]
+    # spread_lhs = linear_distribution(spread_min, spread_max, random_numbers_lhs())
+    # nft_lhs = norm(loc=avg_nft, scale=std_nft).ppf(random_numbers_lhs())
+
+    comb_lhs = linear_distribution(com_eff_min, com_eff_max, dist_numbers[:,0])
     qfd_dist = gumbel_r(loc=qfd_loc, scale=qfd_scale)
     qfd_p_l, qfd_p_u = qfd_dist.cdf(qfd_lbound), qfd_dist.cdf(qfd_ubound)
-    qfd_lhs = gumbel_r(loc=qfd_loc, scale=qfd_scale).ppf(random_numbers_lhs(l_lim=qfd_p_l, u_lim=qfd_p_u)) * comb_lhs
-    glaz_lhs = linear_distribution(glaz_min, glaz_max, random_numbers_lhs())
-    beam_lhs = linear_distribution(beam_min, beam_max, random_numbers_lhs()) * x["room_depth"]
-    spread_lhs = linear_distribution(spread_min, spread_max, random_numbers_lhs())
-    nft_lhs = norm(loc=avg_nft, scale=std_nft).ppf(random_numbers_lhs())
+    qfd_lhs = gumbel_r(loc=qfd_loc, scale=qfd_scale).ppf(dist_numbers[:,1]) * comb_lhs
+    glaz_lhs = linear_distribution(glaz_min, glaz_max, dist_numbers[:,2])
+    beam_lhs = linear_distribution(beam_min, beam_max, dist_numbers[:,3]) * x["room_depth"]
+    spread_lhs = linear_distribution(spread_min, spread_max, dist_numbers[:,4])
+    nft_lhs = norm(loc=avg_nft, scale=std_nft).ppf(dist_numbers[:,5])
 
     # delete these items as they are nolonger used and will cause error if passed on
     del x["dist_s_fire_load_density"]  # Fire load density - Gumbel distribution - standard dev [MJ/sq.m]

@@ -226,10 +226,10 @@ def step6_fire_curves_pick():
 
 if __name__ == "__main__":
     # SETTINGS
-    simulations = 2500
+    simulations = 10000
     steel_temperature_to_fix = 273.15 + 620
     building_height = 40
-    project_full_path = r"C:\Users\ian\Dropbox\pp work\test files for mc\calc 1 - n2500_1"
+    project_full_path = r"/Users/fuyans/Dropbox/pp work/test files for mc/calc 1 - n10000_n"
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)
@@ -239,7 +239,7 @@ if __name__ == "__main__":
         print(f)
         id_ = f.split(".")[0]
         step1_inputs_maker(f, simulations)
-        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "in_main_calc.p")), 6, 5)
+        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "in_main_calc.p")), 0, 5)
         step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
         step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")), building_height)
 
