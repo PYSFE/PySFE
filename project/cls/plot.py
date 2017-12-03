@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
-from numpy import array
 import numpy as np
-import math
-import matplotlib
+# import matplotlib
 # matplotlib.use('Qt5Agg')
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import time
 from inspect import currentframe, getframeinfo  # for error handling, get current line number
-import csv
-import os
 import inspect
+from project.cls.plot_adjust_text import adjust_text
 
 
 class Scatter2D(object):
@@ -24,6 +20,7 @@ class Scatter2D(object):
         self._vlines = []
         self._hlines = []
         self._texts = []
+        self._texts_added = []
         self._format = None
 
     def self_delete(self):
@@ -158,16 +155,16 @@ class Scatter2D(object):
 
         m = ['o', '^', 's', 'v', 'p', '*', 'D', 'd', '8', '1', 'h', '+', 'H'] * 40
 
-        for i, l in enumerate(self._lines):
-            l.set_marker(m[i])
-            l.set_color(c[i])
-            l.set_markersize(marker_size)
-            l.set_markevery(mark_every)
-            l.set_markeredgecolor(c[i])
-            l.set_markeredgewidth(marker_edge_width)
-            l.set_fillstyle(marker_fill_style)
-            l.set_linestyle(line_style)
-            l.set_linewidth(line_width)
+        for i, line in enumerate(self._lines):
+            line.set_marker(m[i])
+            line.set_color(c[i])
+            line.set_markersize(marker_size)
+            line.set_markevery(mark_every)
+            line.set_markeredgecolor(c[i])
+            line.set_markeredgewidth(marker_edge_width)
+            line.set_fillstyle(marker_fill_style)
+            line.set_linestyle(line_style)
+            line.set_linewidth(line_width)
 
     def format_legend(self,
                       legend_is_shown=True,
@@ -217,33 +214,72 @@ class Scatter2D(object):
             print("ERROR: {}; LINE: {:d}; FILE: {}".format("Line name does not exist", frame_info.lineno, frame_info.filename))
             return None
 
-        line_style = self._lines[i].get_linestyle() if 'line_style' not in kwargs else kwargs['line_style']
-        line_width = self._lines[i].get_linewidth() if 'line_width' not in kwargs else kwargs['line_width']
-        color = self._lines[i].get_color() if 'color' not in kwargs else kwargs['color']
-        marker = self._lines[i].get_marker() if 'marker' not in kwargs else kwargs['marker']
-        marker_size = self._lines[i].get_markersize() if 'marker_size' not in kwargs else kwargs['marker_size']
-        mark_every = self._lines[i].get_markevery() if 'mark_every' not in kwargs else kwargs['mark_every']
-        marker_edge_color = self._lines[i].get_markeredgecolor() if 'marker_edge_color' not in kwargs else kwargs['marker_edge_color']
-        marker_edge_width = self._lines[i].get_markeredgewidth() if 'marker_edge_width' not in kwargs else kwargs['marker_edge_width']
-        marker_fill_style = self._lines[i].get_fillstyle() if 'marker_fill_style' not in kwargs else kwargs['marker_fill_style']
+        with self._lines[i] as line:
+            line_style = line.get_linestyle() if 'line_style' not in kwargs else kwargs['line_style']
+            line_width = line.get_linewidth() if 'line_width' not in kwargs else kwargs['line_width']
+            color = line.get_color() if 'color' not in kwargs else kwargs['color']
+            marker = line.get_marker() if 'marker' not in kwargs else kwargs['marker']
+            marker_size = line.get_markersize() if 'marker_size' not in kwargs else kwargs['marker_size']
+            mark_every = line.get_markevery() if 'mark_every' not in kwargs else kwargs['mark_every']
+            marker_edge_color = line.get_markeredgecolor() if 'marker_edge_color' not in kwargs else kwargs['marker_edge_color']
+            marker_edge_width = line.get_markeredgewidth() if 'marker_edge_width' not in kwargs else kwargs['marker_edge_width']
+            marker_fill_style = line.get_fillstyle() if 'marker_fill_style' not in kwargs else kwargs['marker_fill_style']
 
-        self._lines[i].set_linestyle(line_style)
-        self._lines[i].set_linewidth(line_width)
-        self._lines[i].set_color(color)
-        self._lines[i].set_marker(marker)
-        self._lines[i].set_markersize(marker_size)
-        self._lines[i].set_markevery(mark_every)
-        self._lines[i].set_markeredgecolor(marker_edge_color)
-        self._lines[i].set_markeredgewidth(marker_edge_width)
-        self._lines[i].set_fillstyle(marker_fill_style)
+            line.set_linestyle(line_style)
+            line.set_linewidth(line_width)
+            line.set_color(color)
+            line.set_marker(marker)
+            line.set_markersize(marker_size)
+            line.set_markevery(mark_every)
+            line.set_markeredgecolor(marker_edge_color)
+            line.set_markeredgewidth(marker_edge_width)
+            line.set_fillstyle(marker_fill_style)
+
+    def add_text(self, x, y, s, va="center", ha="center", fontsize=6):
+        text_ = self._axes[0].text(x=x, y=y, s=s, va="bottom", ha="center", fontsize=6)
+        self._texts_added.append(text_)
 
     def update_line(self, line_name, x, y, label=None):
-        # todo
         pass
 
     def remove_line(self, line_name):
-        # todo
         pass
+
+    def adjust_text(self):
+
+        # adjust_text(self._texts_added, arrowprops=dict(arrowstyle="->", color='r', lw=0.5),
+        #             autoalign='xy',
+        #             # only_move={'points': 'y', 'text': 'y'},
+        #             expand_points=(5, 5),
+        #             force_points=0.1)
+
+        adjust_text(self._texts_added,
+                    # x=None,
+                    # y=None,
+                    # add_objects=None,
+                    # ax=None,
+                    expand_text=(1.2, 1.2),
+                    expand_points=(5.2, 5.2),
+                    expand_objects=(1.2, 1.2),
+                    expand_align=(0.9, 0.9),
+                    autoalign='xy',
+                    va='center',
+                    ha='center',
+                    force_text=0.5,
+                    force_points=0.5,
+                    force_objects=0.5,
+                    lim=100,
+                    precision=0,
+                    only_move={},
+                    text_from_text=True,
+                    text_from_points=True,
+                    save_steps=False,
+                    save_prefix='',
+                    save_format='png',
+                    add_step_numbers=True,
+                    draggable=True,
+                    on_basemap=False,
+                    arrowprops=dict(arrowstyle="->", color='b', lw=0.5),)
 
     def save_figure(self, file_name="_figure", file_format=".pdf", name_prefix="", name_suffix="", dir_folder="", dpi=300):
         time_suffix = False
@@ -255,6 +291,7 @@ class Scatter2D(object):
         file_name = "".join([name_prefix, file_name, name_suffix])
         self._figure.tight_layout()
         file_name += file_format
+        self.adjust_text()
         self._figure.savefig("/".join([dir_folder, file_name]), bbox_inches='tight', dpi=dpi)
 
     def show(self):

@@ -4,20 +4,14 @@ import time
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
-from project.lhs_max_st_temp.func import mc_fr_calculation, mc_inputs_generator, mc_post_processing
+import copy
+from project.lhs_max_st_temp.func import mc_fr_calculation, mc_inputs_generator, mc_fr_calculation_worker
 from project.func.temperature_fires import standard_fire_iso834 as standard_fire
 from project.cls.plot import Scatter2D
 from pickle import load as pload
 from pickle import dump as pdump
 from project.func.files import list_all_files_with_suffix
-
-
-# wrapper to deal with inputs format (dict-> kwargs)
-def worker(arg):
-    kwargs, q = arg
-    result = mc_fr_calculation(**kwargs)
-    q.put(kwargs)
-    return result
+from scipy.interpolate import interp1d
 
 
 def step0_parse_input_files(dir_work):
@@ -46,8 +40,6 @@ def step1_inputs_maker(path_input_file):
                     "iso834_temperature": fire[1],}
     list_kwargs, dict_settings = mc_inputs_generator(dict_extra_variables_to_add=inputs_extra,
                                                      dir_file=path_input_file)
-
-    # todo: Check if file path that kwargs goes in already exits, delete if it already exist.
 
     # Save list_kwargs as a pickle object.
     pdump(list_kwargs, open(path_variable_file, "wb"))
@@ -79,7 +71,7 @@ def step2_main_calc(path_input_file, n_proc=0, progress_print_interval=1):
     m = mp.Manager()
     q = m.Queue()
     p = mp.Pool(n_proc)
-    jobs = p.map_async(worker, [(kwargs, q) for kwargs in list_kwargs])
+    jobs = p.map_async(mc_fr_calculation_worker, [(kwargs, q) for kwargs in list_kwargs])
     count_total_simulations = len(list_kwargs)
     while progress_print_interval:
         if jobs.ready():
@@ -156,40 +148,11 @@ def step4_results_visulisation(path_input_file):
     else:
         y__ = 0.5
 
-    x, y, x_, y_, xy_found = mc_post_processing(x, y_find=[y__])
-
-    plt = Scatter2D()
-    plt.plot2(x/60, y, "Simulation results")
-    # plt.plot2(x_/60, y_, "Interpolated CDF")
-    plt.format(**{"figure_size_scale": 0.7, "axis_lim_y1": (0, 1), "axis_lim_x": (0, 120), "legend_is_shown": False, "axis_label_x": "Time Equivalence [min]", "axis_label_y1": "Fractile", "marker_size": 0})
-
-    # plt.update_line_format("Interpolated CDF", **{"line_width": 0.5, "color": "black", "line_style": ":"})
-    if height_building > 0:
-        for i in np.arange(0, len(xy_found), 1):
-            x_found, y_found = xy_found[i, :]
-            plt.plot_vertical_line(x=x_found/60.)
-            plt.plot_horizontal_line(y=y_found)
-            plt.axes_primary.text(x=x_found/60+1, y=y_found-0.01, s="({:.0f}, {:.4f})".format(x_found/60, y_found), va="top", ha="left", fontsize=6)
-
-    plt.save_figure(file_name=" - ".join([id_, "res_plot"]), file_format=".pdf", dir_folder=dir_work)
-
-    print("POST PROCESSING COMPLETE")
-
-
-def step5_results_visulisation_all(dir_work, height_building=None):
-    # get all file names within 'dir_work' directory
-    results_files = list_all_files_with_suffix(dir_work, " - res_df.p", is_full_dir=False)
-
-    # proceed only if there are more than one files
-    if len(results_files) == 1:
-        print("Assembled visualisation aborted.")
-        return 0
-
-    # get all x and y values, and plot
-    if height_building is not None:
-        x, y, x_, y_ = [], [], [], 1 - 64.8 / height_building ** 2
-    else:
-        x, y, x_, y_ = [], [], [], []
+    x = df_results["TIME EQUIVALENCE [min]"].values * 60.
+    y = np.arange(1, len(x) + 1) / len(x)
+    f_interp = interp1d(y, x)
+    y_line = 1 - 64.8 / height_building ** 2
+    x_line = f_interp(y_line)
 
     plt = Scatter2D()
     plt_format = {"figure_size_scale": 0.7,
@@ -199,41 +162,103 @@ def step5_results_visulisation_all(dir_work, height_building=None):
                   "axis_label_x": "Time Equivalence [min]",
                   "axis_label_y1": "Fractile",
                   "marker_size": 0}
-    plt_text_format = dict(va="center",
-                           ha="center",
-                           fontsize=6,
-                           bbox=dict(boxstyle="square", fc="w", ec="k"))
+    plt.plot2(x/60, y, "Simulation results")
 
+    plt.format(**plt_format)
+
+    if height_building > 0:
+        x_end = plt.axes_primary.get_xlim()[1]
+        y_end = plt.axes_primary.get_ylim()[1]
+
+        x_line_ = x_line/60.
+        y_line_ = y_line
+        plt.plot_vertical_line(x=x_line_)
+        plt.axes_primary.text(x=x_line_, y=y_end, s="{:.0f}".format(x_line_), va="bottom", ha="center", fontsize=6)
+        plt.plot_horizontal_line(y=y_line_)
+        plt.axes_primary.text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="left", fontsize=6)
+
+    plt.save_figure(file_name=" - ".join([id_, "res_plot"]), file_format=".pdf", dir_folder=dir_work)
+
+    print("POST PROCESSING COMPLETE")
+
+
+def step5_results_visulisation_all(dir_work):
+    # get all file names within 'dir_work' directory
+    results_files = list_all_files_with_suffix(dir_work, " - res_df.p", is_full_dir=False)
+
+    # proceed only if there are more than one files
+    if len(results_files) == 1:
+        print("Assembled visualisation aborted.")
+        return 0
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Plot a Graph for All Data
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # instantiate plotting object
+    plt = Scatter2D()
+
+    # format parameters for figure
+    plt_format = {"figure_size_scale": 0.7,
+                  "axis_lim_y1": (0, 1),
+                  "axis_lim_x": (0, 120),
+                  "legend_is_shown": True,
+                  "axis_label_x": "Time Equivalence [min]",
+                  "axis_label_y1": "Fractile",
+                  "marker_size": 0}
+
+    # format parameters for additional texts which indicate the x_line and y_line values
+    # plt_format_text = {"fontsize": 6, "bbox": dict(boxstyle="square", fc="w", ec="b")}
+
+    # container for x_line and y_line
+    x_line, y_line = [], []
+
+    # iterate through all result files and plot lines accordingly
     for dir_obj_file in results_files:
+        # plot this line
+        id_ = dir_obj_file.split(" - ")[0]
+
+        # Load settings
+        path_settings_file = os.path.join(dir_work, "{} - {}".format(id_, "prefs.p"))
+        dict_settings = pload(open(path_settings_file, "rb"))
+        height_building = dict_settings["building_height"]
+
         # load obj from given file path
         path_obj_file = os.path.join(dir_work, dir_obj_file)
         df_results = pload(open(path_obj_file, "rb"))
 
-        # resolve x_value into x y and horizontal and vertical lines
-        x_value = df_results["TIME EQUIVALENCE [min]"].values * 60.
-        x1, y1, x_1, y_1, xy__1 = mc_post_processing(x_value, y_find=[y_])
+        # obtain values: x, y, x_line (vertical line) and y_line (horizontal line)
+        x = df_results["TIME EQUIVALENCE [min]"].values
+        y = np.arange(1, len(x) + 1) / len(x)
+        f_interp = interp1d(y, x)
+        y_line_ = 1 - 64.8 / height_building ** 2
+        x_line_ = f_interp(y_line_)
 
-        xx, yy = xy__1[0, :]
+        # plot line f(x)
+        plt.plot2(x, y, id_)
+        plt.format(**plt_format)
 
-        x.append(x1)
-        y.append(y1)
-        x_.append(xx)
-
-        # plot this line
-        id_ = dir_obj_file.split(" - ")[0]
-        plt.plot2(x1/60, y1, id_)
-
-        if height_building is not None:
-            plt.plot_horizontal_line(y=yy)
-            plt.plot_vertical_line(x=xx/60.)
-            plt.axes_primary.text(x=xx/60., y=+0.03, s="{:.0f}".format(xx/60.), **plt_text_format)
-
-    if height_building is not None:
-        plt.axes_primary.text(x=5, y=yy, s="{:.4f}".format(yy), **plt_text_format)
+        # obtain x_line and y_line for later use
+        if height_building > 0:
+            x_line.append(round(float(x_line_),0))
+            y_line.append(round(float(y_line_),4))
 
     plt.format(**plt_format)
 
-    plt.save_figure(dir_folder=dir_work, file_name=os.path.basename(dir_work), file_format=".png")
+    x_line = set(x_line)
+    y_line = set(y_line)
+    x_end = plt.axes_primary.get_xlim()[1] - 10
+    y_end = plt.axes_primary.get_ylim()[1] - 0.2
+
+    for x_line_ in x_line:
+        plt.plot_vertical_line(x=x_line_)
+        plt.add_text(x=x_line_, y=list(y_line)[0], s="{:.0f}".format(x_line_), va="bottom", ha="center", fontsize=6)
+
+    for y_line_ in y_line:
+        plt.plot_horizontal_line(y=y_line_)
+        plt.add_text(x=0, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="left", fontsize=6)
+
+    plt.save_figure(dir_folder=dir_work, file_name=os.path.basename(dir_work), file_format=".pdf")
 
 
 def step6_fire_curves_pick():
@@ -242,7 +267,7 @@ def step6_fire_curves_pick():
 
 if __name__ == "__main__":
     # SETTINGS
-    project_full_path = r"C:\Users\Ian Fu\Dropbox (OFR-UK)\Bicester_team_projects\Live_projects\A1_Canada_Water\time eq analysis\CALC"
+    project_full_path = r"/Users/fuyans/Dropbox/pp work/lhs sensitivity study 2"
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)
@@ -250,10 +275,10 @@ if __name__ == "__main__":
     ff = "{} - {}"
     for f in list_files:
         print(f)
-        id_ = f.split(".")[0]
-        step1_inputs_maker(f)
-        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "args_main.p")), 0, 5)
-        step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
-        step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
+        # id_ = f.split(".")[0]
+        # step1_inputs_maker(f)
+        # step2_main_calc(os.path.join(project_full_path, ff.format(id_, "args_main.p")), 0, 5)
+        # step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
+        # step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
 
     step5_results_visulisation_all(project_full_path)
