@@ -151,7 +151,10 @@ def step4_results_visulisation(path_input_file):
     x = df_results["TIME EQUIVALENCE [min]"].values * 60.
     y = np.arange(1, len(x) + 1) / len(x)
     f_interp = interp1d(y, x)
-    y_line = 1 - 64.8 / height_building ** 2
+    if height_building == 0:
+        y_line = 0
+    else:
+        y_line = 1 - 64.8 / height_building ** 2
     y_line = 0.01
     x_line = f_interp(y_line)
 
@@ -232,8 +235,11 @@ def step5_results_visulisation_all(dir_work):
         x = df_results["TIME EQUIVALENCE [min]"].values
         y = np.arange(1, len(x) + 1) / len(x)
         f_interp = interp1d(y, x)
-        y_line_ = 1 - 64.8 / height_building ** 2
-        x_line_ = f_interp(y_line_)
+        if height_building == 0:
+            y_line_ = 0
+        else:
+            y_line_ = 1 - 64.8 / height_building ** 2
+            x_line_ = f_interp(y_line_)
 
         # plot line f(x)
         plt.plot2(x, y, id_)
@@ -268,7 +274,7 @@ def step6_fire_curves_pick():
 
 if __name__ == "__main__":
     # SETTINGS
-    project_full_path = r"C:\Users\ian\Dropbox\pp work\lhs sensitivity study 3 sensitivity"
+    project_full_path = r"C:\Users\Ian Fu\Dropbox (OFR-UK)\pp_work\MC Simulation\non-simply sampled"
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)
@@ -277,9 +283,9 @@ if __name__ == "__main__":
     for f in list_files:
         print(f)
         id_ = f.split(".")[0]
-        # step1_inputs_maker(f)
-        # step2_main_calc(os.path.join(project_full_path, ff.format(id_, "args_main.p")), 5)
-        # step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
-        # step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
+        step1_inputs_maker(f)
+        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "args_main.p")), 5)
+        step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
+        step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
 
     step5_results_visulisation_all(project_full_path)

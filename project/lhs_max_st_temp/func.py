@@ -283,8 +283,18 @@ def mc_fr_calculation(
     return time_fire_resistance, seek_status, window_open_fraction, fire_load_density, fire_spread_speed, beam_position, temperature_max_near_field, fire_type, T_max, protection_thickness_, seek_count_iter
 
 
+
 def mc_inputs_generator(dict_extra_variables_to_add=dict, dir_file=str):
     steel_prop = Thermal()
+
+    #   Handy interim functions
+
+    def linear_distribution(min, max, prob): return ((max - min) * prob) + min
+
+    #   Create random number array for each stochastic variable
+    def random_numbers_lhs(n, lhs_criterion, l_lim=0, u_lim=1):
+        return lhs(1, samples=n, criterion=lhs_criterion).flatten() * (u_lim - l_lim) + l_lim
+
 
     # ------------------------------------------------------------------------------------------------------------------
     #   Define the inputs from file
@@ -349,25 +359,25 @@ def mc_inputs_generator(dict_extra_variables_to_add=dict, dir_file=str):
     spread_max = dict_dist_vars["spread_max"]  # Max spread rate for TFM [m/s]  - Linear dist
     avg_nft = dict_dist_vars["avg_nft"]  # TFM near field temperature - Norm distribution - mean [C]
 
-    def _num_scaling(numbers, u_lim=1, l_lim=0): return ((u_lim - l_lim) * numbers) + l_lim
-    
+    # qfd_std=qfd_mean=qfd_ubound=qfd_lbound=glaz_min=glaz_max=beam_min=beam_max=com_eff_min=com_eff_max=spread_min=spread_max=avg_nft=0
+    # locals().update(dict_dist_vars)
+
     #   Calculate gumbel parameters
     qfd_scale = (qfd_std * (6 ** 0.5)) / np.pi
     qfd_loc = qfd_mean - (0.5722 * qfd_scale)
     qfd_dist = gumbel_r(loc=qfd_loc, scale=qfd_scale)
     qfd_p_l, qfd_p_u = qfd_dist.cdf(qfd_lbound), qfd_dist.cdf(qfd_ubound)
-    #   Near field standard deviation
 
+    #   Near field standard deviation
     std_nft = (1.939 - (np.log(avg_nft) * 0.266)) * avg_nft
 
     #   Convert LHS probabilities to distribution invariants
-    comb_lhs = _num_scaling(numbers=lhs_mat[:, 0], u_lim=com_eff_max, l_lim=com_eff_min)
-    glaz_lhs = _num_scaling(numbers=lhs_mat[:, 1], u_lim=glaz_max, l_lim=glaz_min)
-    beam_lhs = _num_scaling(numbers=lhs_mat[:, 2], u_lim=beam_max, l_lim=beam_min)
-    spread_lhs = _num_scaling(numbers=lhs_mat[:, 3], u_lim=spread_max, l_lim=spread_min)
-    nft_lhs = norm(loc=avg_nft, scale=std_nft).ppf(lhs_mat[:, 4])
-    qfd_p_samples = _num_scaling(numbers=lhs_mat[:, 5], u_lim=qfd_p_u, l_lim=qfd_p_l)
-    qfd_lhs = gumbel_r(loc=qfd_loc, scale=qfd_scale).ppf(qfd_p_samples) * comb_lhs
+    comb_lhs = linear_distribution(com_eff_min, com_eff_max, lhs_mat[:,0])
+    qfd_lhs = gumbel_r(loc=qfd_loc, scale=qfd_scale).ppf(lhs_mat[:,1]) * comb_lhs
+    glaz_lhs = linear_distribution(glaz_min, glaz_max, lhs_mat[:,2])
+    beam_lhs = linear_distribution(beam_min, beam_max, lhs_mat[:,3]) * dict_vars_0["room_depth"]
+    spread_lhs = linear_distribution(spread_min, spread_max, lhs_mat[:,4])
+    nft_lhs = norm(loc=avg_nft, scale=std_nft).ppf(lhs_mat[:,5])
 
     # ------------------------------------------------------------------------------------------------------------------
     # Create input kwargs for mc calculation
@@ -387,6 +397,7 @@ def mc_inputs_generator(dict_extra_variables_to_add=dict, dir_file=str):
         list_kwargs.append(x_)
 
     return list_kwargs, dict_setting_vars
+
 
 
 def mc_post_processing(x, x_find=None, y_find=None):
