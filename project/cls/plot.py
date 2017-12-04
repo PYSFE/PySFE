@@ -238,6 +238,7 @@ class Scatter2D(object):
     def add_text(self, x, y, s, va="center", ha="center", fontsize=6):
         text_ = self._axes[0].text(x=x, y=y, s=s, va="bottom", ha="center", fontsize=6)
         self._texts_added.append(text_)
+        # self.adjust_text()
 
     def update_line(self, line_name, x, y, label=None):
         pass
@@ -258,7 +259,7 @@ class Scatter2D(object):
                     # y=None,
                     # add_objects=None,
                     # ax=None,
-                    expand_text=(1.2, 1.2),
+                    expand_text=(1.2, 2.2),
                     expand_points=(5.2, 5.2),
                     expand_objects=(1.2, 1.2),
                     expand_align=(0.9, 0.9),
@@ -291,7 +292,7 @@ class Scatter2D(object):
         file_name = "".join([name_prefix, file_name, name_suffix])
         self._figure.tight_layout()
         file_name += file_format
-        self.adjust_text()
+        # self.adjust_text()
         self._figure.savefig("/".join([dir_folder, file_name]), bbox_inches='tight', dpi=dpi)
 
     def show(self):

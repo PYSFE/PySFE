@@ -46,7 +46,7 @@ def step1_inputs_maker(path_input_file):
     pdump(dict_settings, open(path_setting_file, "wb"))
 
 
-def step2_main_calc(path_input_file, n_proc=0, progress_print_interval=1):
+def step2_main_calc(path_input_file, progress_print_interval=1):
 
     # Make prefix, suffix, file and directory strings
     dir_work = os.path.dirname(path_input_file)
@@ -152,6 +152,7 @@ def step4_results_visulisation(path_input_file):
     y = np.arange(1, len(x) + 1) / len(x)
     f_interp = interp1d(y, x)
     y_line = 1 - 64.8 / height_building ** 2
+    y_line = 0.01
     x_line = f_interp(y_line)
 
     plt = Scatter2D()
@@ -247,16 +248,16 @@ def step5_results_visulisation_all(dir_work):
 
     x_line = set(x_line)
     y_line = set(y_line)
-    x_end = plt.axes_primary.get_xlim()[1] - 10
-    y_end = plt.axes_primary.get_ylim()[1] - 0.2
+    x_end = plt.axes_primary.get_xlim()[1] + 5
+    y_end = plt.axes_primary.get_ylim()[1] + 0.005
 
     for x_line_ in x_line:
         plt.plot_vertical_line(x=x_line_)
-        plt.add_text(x=x_line_, y=list(y_line)[0], s="{:.0f}".format(x_line_), va="bottom", ha="center", fontsize=6)
+        plt.add_text(x=x_line_, y=y_end, s="{:.0f}".format(x_line_), va="bottom", ha="center", fontsize=6)
 
     for y_line_ in y_line:
         plt.plot_horizontal_line(y=y_line_)
-        plt.add_text(x=0, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="left", fontsize=6)
+        plt.add_text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="center", fontsize=6)
 
     plt.save_figure(dir_folder=dir_work, file_name=os.path.basename(dir_work), file_format=".pdf")
 
@@ -267,7 +268,7 @@ def step6_fire_curves_pick():
 
 if __name__ == "__main__":
     # SETTINGS
-    project_full_path = r"/Users/fuyans/Dropbox/pp work/lhs sensitivity study 2"
+    project_full_path = r"C:\Users\ian\Dropbox\pp work\lhs sensitivity study 3 sensitivity"
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)
@@ -275,9 +276,9 @@ if __name__ == "__main__":
     ff = "{} - {}"
     for f in list_files:
         print(f)
-        # id_ = f.split(".")[0]
+        id_ = f.split(".")[0]
         # step1_inputs_maker(f)
-        # step2_main_calc(os.path.join(project_full_path, ff.format(id_, "args_main.p")), 0, 5)
+        # step2_main_calc(os.path.join(project_full_path, ff.format(id_, "args_main.p")), 5)
         # step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
         # step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
 
