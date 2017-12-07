@@ -76,7 +76,7 @@ def protected_steel_eurocode(
         c_protection,
         thickness_protection,
         perimeter_protected,
-        is_terminate_peak_steel_temperature=False
+        is_terminate_peak=False
 ):
     """
     SI UNITS!
@@ -92,6 +92,7 @@ def protected_steel_eurocode(
     :param c_protection:            {float} [J/K/kg]
     :param thickness_protection:    {float} [m]
     :param perimeter_protected:     {float} [m]
+    :param is_terminate_peak:       {bool} [-]              True will terminate and return values when first peak steel temperature is observed.
     :return time:                   {ndarray, float} [s]
     :return temperature_steel:      {ndarray, float} [K]
     :return data_all:               {Dict} [-]
@@ -145,28 +146,13 @@ def protected_steel_eurocode(
             temperature_rate_steel[i] = 0
             temperature_steel[i] = temperature_steel[i-1]
 
-        # Following is the old 'correction' code which will inadvertently prevent energy lock within the protection layer.
-        # T_range_u = max([temperature_steel[i-1], T_g])
-        # T_range_l = min([temperature_steel[i-1], T_g])
-        #
-        # if temperature_steel[i] < T_range_l:
-        #     temperature_steel[i] = T_range_l
-        #     temperature_rate_steel[i] = (temperature_steel[i] - temperature_steel[i-1]) / d
-        # elif temperature_steel[i] > T_range_u:
-        #     temperature_steel[i] = T_range_u
-        #     temperature_rate_steel[i] = (temperature_steel[i] - temperature_steel[i-1]) / d
-
-        if is_terminate_peak_steel_temperature and temperature_rate_steel[i] < 0:
-            data_all = {"time [s]": time,
-                        "temperature fire [K]": temperature_ambient,
-                        "temperature steel [K]": temperature_steel,
+        if is_terminate_peak and temperature_rate_steel[i] < 0:
+            data_all = {"temperature fire [K]": temperature_ambient,
                         "temperature rate steel [K/s]": temperature_rate_steel,
                         "specific heat steel [J/kg/K]": specific_heat_steel}
             return time, temperature_steel, data_all
 
     data_all = {
-        "time [s]": time,
-        "temperature fire [K]": temperature_ambient,
         "temperature steel [K]": temperature_steel,
         "temperature rate steel [K/s]": temperature_rate_steel,
         "specific heat steel [J/kg/K]": specific_heat_steel

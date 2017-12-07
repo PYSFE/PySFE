@@ -48,7 +48,8 @@ class Scatter2D(object):
                 self._lines.append(line[0])
 
     def plot2(self, x, y, label="", second_axis=False):
-        self._axes.append(self._figure.add_subplot(111))
+        if len(self._axes) == 0:
+            self._axes.append(self._figure.add_subplot(111))
 
         if second_axis:
             self._axes.append(self._axes[0].twinx())

@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 import os
 import time
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
 import copy
-from project.lhs_max_st_temp.func import mc_fr_calculation, mc_inputs_generator, mc_fr_calculation_worker
+from project.SPRS.func_core import mc_inputs_generator, calc_time_equ_worker
 from project.func.temperature_fires import standard_fire_iso834 as standard_fire
 from project.cls.plot import Scatter2D
 from pickle import load as pload
@@ -66,12 +65,15 @@ def step2_main_calc(path_input_file, progress_print_interval=1):
 
     # SIMULATION
     print("SIMULATION STARTS")
-    print(("{}{}\n"*2).format("Number of Threads:", n_proc, "Total Simulations:", len(list_kwargs)))
+    print("{}{}".format("Input file:", id_))
+    print("{}{}".format("Total Simulations:", len(list_kwargs)))
+    print("{}{}".format("Number of Threads:", n_proc))
+
     time_count_simulation = time.perf_counter()
     m = mp.Manager()
     q = m.Queue()
     p = mp.Pool(n_proc)
-    jobs = p.map_async(mc_fr_calculation_worker, [(kwargs, q) for kwargs in list_kwargs])
+    jobs = p.map_async(calc_time_equ_worker, [(kwargs, q) for kwargs in list_kwargs])
     count_total_simulations = len(list_kwargs)
     while progress_print_interval:
         if jobs.ready():
@@ -95,10 +97,11 @@ def step2_main_calc(path_input_file, progress_print_interval=1):
                                "BEAM POSITION [m]": results[:, 5],
                                "MAX. NEAR FIELD TEMPERATURE [C]": results[:, 6],
                                "FIRE TYPE [0:P., 1:T.]": results[:, 7],
-                               "PEAK STEEL TEMPERATURE [C]": results[:, 8]-273.15,
+                               "PEAK STEEL TEMPERATURE TO GOAL SEEK [C]": results[:, 8]-273.15,
                                "PROTECTION THICKNESS [m]": results[:, 9],
-                               "SEEK ITERATIONS": results[:, 10]})
-    df_outputs = df_outputs[["TIME EQUIVALENCE [min]", "PEAK STEEL TEMPERATURE [C]", "PROTECTION THICKNESS [m]", "SEEK STATUS [bool]", "WINDOW OPEN FRACTION [%]", "FIRE LOAD DENSITY [MJ/m2]", "FIRE SPREAD SPEED [m/s]", "BEAM POSITION [m]", "MAX. NEAR FIELD TEMPERATURE [C]", "FIRE TYPE [0:P., 1:T.]"]]
+                               "SEEK ITERATIONS [-]": results[:, 10],
+                               "PEAK STEEL TEMPERATURE TO FIXED PROTECTION [C]": np.sort(results[:, 11])-273.15})
+    df_outputs = df_outputs[["TIME EQUIVALENCE [min]", "PEAK STEEL TEMPERATURE TO GOAL SEEK [C]", "PROTECTION THICKNESS [m]", "SEEK STATUS [bool]", "SEEK ITERATIONS [-]", "WINDOW OPEN FRACTION [%]", "FIRE LOAD DENSITY [MJ/m2]", "FIRE SPREAD SPEED [m/s]", "BEAM POSITION [m]", "MAX. NEAR FIELD TEMPERATURE [C]", "FIRE TYPE [0:P., 1:T.]", "PEAK STEEL TEMPERATURE TO FIXED PROTECTION [C]"]]
     df_outputs.sort_values(by=["TIME EQUIVALENCE [min]"], inplace=True)
     df_outputs.reset_index(drop=True, inplace=True)
 
@@ -135,8 +138,6 @@ def step4_results_visulisation(path_input_file):
     # Load the dataframe obj file
     df_results = pload(open(path_input_file, "rb"))
 
-    # Obtain time equivalence, in minutes, as x-axis values
-    x = df_results["TIME EQUIVALENCE [min]"].values * 60.
 
     # Filter out entries with failed seek status, i.e. peak steel temperature is not within the tolerance.
     # seek_status = df_results["SEEK STATUS [bool]"].values
@@ -148,6 +149,7 @@ def step4_results_visulisation(path_input_file):
     else:
         y__ = 0.5
 
+    # Obtain time equivalence, in minutes, as x-axis values
     x = df_results["TIME EQUIVALENCE [min]"].values * 60.
     y = np.arange(1, len(x) + 1) / len(x)
     f_interp = interp1d(y, x)
@@ -155,7 +157,6 @@ def step4_results_visulisation(path_input_file):
         y_line = 0
     else:
         y_line = 1 - 64.8 / height_building ** 2
-    y_line = 0.01
     x_line = f_interp(y_line)
 
     plt = Scatter2D()
@@ -181,9 +182,8 @@ def step4_results_visulisation(path_input_file):
         plt.plot_horizontal_line(y=y_line_)
         plt.axes_primary.text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="left", fontsize=6)
 
-    plt.save_figure(file_name=" - ".join([id_, "res_plot"]), file_format=".pdf", dir_folder=dir_work)
-
-    print("POST PROCESSING COMPLETE")
+    plt.save_figure(file_name=" - ".join([id_, "res_plot"]), file_format=".png", dir_folder=dir_work)
+    print("RESULTS PLOT SAVED: {}".format(" - ".join([id_, "res_plot"])+".png"))
 
 
 def step5_results_visulisation_all(dir_work):
@@ -247,8 +247,8 @@ def step5_results_visulisation_all(dir_work):
 
         # obtain x_line and y_line for later use
         if height_building > 0:
-            x_line.append(round(float(x_line_),0))
-            y_line.append(round(float(y_line_),4))
+            x_line.append(round(float(x_line_), 0))
+            y_line.append(round(float(y_line_), 4))
 
     plt.format(**plt_format)
 
@@ -265,27 +265,8 @@ def step5_results_visulisation_all(dir_work):
         plt.plot_horizontal_line(y=y_line_)
         plt.add_text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="center", fontsize=6)
 
-    plt.save_figure(dir_folder=dir_work, file_name=os.path.basename(dir_work), file_format=".pdf")
+    plt.save_figure(dir_folder=dir_work, file_name=os.path.basename(dir_work), file_format=".png")
 
 
 def step6_fire_curves_pick():
     pass
-
-
-if __name__ == "__main__":
-    # SETTINGS
-    project_full_path = r"C:\Users\Ian Fu\Dropbox (OFR-UK)\pp_work\MC Simulation\non-simply sampled"
-
-    # ROUTINES
-    project_full_path = os.path.abspath(project_full_path)
-    list_files = step0_parse_input_files(dir_work=project_full_path)
-    ff = "{} - {}"
-    for f in list_files:
-        print(f)
-        id_ = f.split(".")[0]
-        step1_inputs_maker(f)
-        step2_main_calc(os.path.join(project_full_path, ff.format(id_, "args_main.p")), 5)
-        step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
-        step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
-
-    step5_results_visulisation_all(project_full_path)
