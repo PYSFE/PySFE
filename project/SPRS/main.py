@@ -5,7 +5,7 @@ from project.SPRS.func_time_equivalence import step0_parse_input_files, step1_in
 
 if __name__ == "__main__":
     # SETTINGS
-    project_full_path = r"C:\Users\Ian Fu\Dropbox (OFR-UK)\Bicester_team_projects\Live_projects\A1_Canada_Water\time eq analysis\trail 15mins"
+    project_full_path = r"C:\Users\Ian Fu\Dropbox (OFR-UK)\Bicester_team_projects\Live_projects\A1_Canada_Water\time eq analysis\trail 15+30mins"
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)
@@ -16,7 +16,7 @@ if __name__ == "__main__":
         step1_inputs_maker(f)
         # step2_main_calc(os.path.join(project_full_path, ff.format(id_, "args_main.p")), 5)
         # step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
-        step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
+        # step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
         print("")
 
     step5_results_visulisation_all(project_full_path)

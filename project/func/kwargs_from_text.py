@@ -13,6 +13,9 @@ def kwargs_from_text(raw_input_text_str):
     # remove spaces
     input_text = input_text.replace(" ", "")
 
+    # remove tabs
+    input_text = input_text.replace("\t", "")
+
     # break raw input text to a list
     input_text = re.split('[;\r\n]', input_text)
 

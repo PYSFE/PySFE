@@ -203,7 +203,7 @@ def step5_results_visulisation_all(dir_work):
     plt = Scatter2D()
 
     # format parameters for figure
-    plt_format = {"figure_size_scale": 0.7,
+    plt_format = {"figure_size_scale": 0.4,
                   "axis_lim_y1": (0, 1),
                   "axis_lim_x": (0, 120),
                   "legend_is_shown": True,
@@ -252,18 +252,23 @@ def step5_results_visulisation_all(dir_work):
 
     plt.format(**plt_format)
 
-    x_line = set(x_line)
-    y_line = set(y_line)
-    x_end = plt.axes_primary.get_xlim()[1] + 5
-    y_end = plt.axes_primary.get_ylim()[1] + 0.005
+    if height_building > 0:
+        x_line = set(x_line)
+        y_line = set(y_line)
+        x_end = plt.axes_primary.get_xlim()[1] + 5
+        y_end = plt.axes_primary.get_ylim()[1] + 0.005
 
-    for x_line_ in x_line:
-        plt.plot_vertical_line(x=x_line_)
-        plt.add_text(x=x_line_, y=y_end, s="{:.0f}".format(x_line_), va="bottom", ha="center", fontsize=6)
+        x_line = [max(x_line)]
 
-    for y_line_ in y_line:
-        plt.plot_horizontal_line(y=y_line_)
-        plt.add_text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="center", fontsize=6)
+        for x_line_ in x_line:
+            plt.plot_vertical_line(x=x_line_)
+            plt.add_text(x=x_line_, y=y_end, s="{:.0f}".format(x_line_), va="bottom", ha="center", fontsize=6)
+        # plt.plot_vertical_line(x=45)
+        # plt.add_text(x=45, y=y_end, s="{:.0f}".format(x_line_), va="bottom", ha="center", fontsize=6)
+
+        for y_line_ in y_line:
+            plt.plot_horizontal_line(y=y_line_)
+            plt.add_text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="center", fontsize=6)
 
     plt.save_figure(dir_folder=dir_work, file_name=os.path.basename(dir_work), file_format=".png")
 

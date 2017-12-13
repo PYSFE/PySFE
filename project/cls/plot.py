@@ -97,7 +97,7 @@ class Scatter2D(object):
 
         self._figure.set_size_inches(w=figure_size_width * figure_size_scale, h=figure_size_height * figure_size_scale)
         self._figure.suptitle(figure_title, fontsize=figure_title_font_size)
-        self._figure.set_facecolor((1 / 237., 1 / 237., 1 / 237., 0.0))
+        self._figure.set_facecolor((1 / 237., 1 / 237., 1 / 237., 1.0))
 
     def format_axes(self,
                     axis_label_x="",
