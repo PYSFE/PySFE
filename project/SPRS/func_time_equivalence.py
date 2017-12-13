@@ -153,11 +153,11 @@ def step4_results_visulisation(path_input_file):
     x = df_results["TIME EQUIVALENCE [min]"].values * 60.
     y = np.arange(1, len(x) + 1) / len(x)
     f_interp = interp1d(y, x)
-    if height_building == 0:
-        y_line = 0
-    else:
+    if height_building > 0:
         y_line = 1 - 64.8 / height_building ** 2
-    x_line = f_interp(y_line)
+        x_line = f_interp(y_line)
+    else:
+        x_line = y_line = 0
 
     plt = Scatter2D()
     plt_format = {"figure_size_scale": 0.7,

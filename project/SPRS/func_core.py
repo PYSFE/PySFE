@@ -230,7 +230,7 @@ def calculation_time_equivalence(
                                   "c_protection": protection_c,
                                   "thickness_protection": protection_thickness,
                                   "perimeter_protected": protection_protected_perimeter,
-                                  "is_terminate_peak": False}
+                                  "is_terminate_peak": True}
 
     # Find maximum steel temperature for the static protection layer thickness
     if protection_thickness > 0:
