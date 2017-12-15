@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 import os
-from project.SPRS.func_time_equivalence import step0_parse_input_files, step1_inputs_maker, step2_main_calc, step3_results_numerical, step4_results_visulisation, step5_results_visulisation_all, step6_fire_curves_pick
+from project.SRPA.func_time_equivalence import step0_parse_input_files, step1_inputs_maker, step2_main_calc, step3_results_numerical, step4_results_visulisation, step5_results_visulisation_all, step6_fire_curves_pick
 
 
 if __name__ == "__main__":
     # SETTINGS
-    project_full_path = r"C:\Users\Ian Fu\Dropbox (OFR-UK)\Bicester_team_projects\Live_projects\A1_Canada_Water\time eq analysis\trail 15+30mins"
+    project_full_path = r"C:\Users\Ian Fu\Dropbox (OFR-UK)\Bicester_team_projects\Live_projects\A1_Canada_Water\time eq analysis\trail 30mins"
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)
     list_files = step0_parse_input_files(dir_work=project_full_path)
+    print(project_full_path)
     ff = "{} - {}"
     for f in list_files:
         id_ = f.split(".")[0]

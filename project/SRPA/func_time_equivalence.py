@@ -4,7 +4,7 @@ import multiprocessing as mp
 import numpy as np
 import pandas as pd
 import copy
-from project.SPRS.func_core import mc_inputs_generator, calc_time_equ_worker
+from project.SRPA.func_core import mc_inputs_generator, calc_time_equ_worker
 from project.func.temperature_fires import standard_fire_iso834 as standard_fire
 from project.cls.plot import Scatter2D
 from pickle import load as pload
@@ -192,7 +192,6 @@ def step5_results_visulisation_all(dir_work):
 
     # proceed only if there are more than one files
     if len(results_files) == 1:
-        print("Assembled visualisation aborted.")
         return 0
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -216,6 +215,7 @@ def step5_results_visulisation_all(dir_work):
 
     # container for x_line and y_line
     x_line, y_line = [], []
+    height_building = 0
 
     # iterate through all result files and plot lines accordingly
     for dir_obj_file in results_files:
@@ -263,12 +263,13 @@ def step5_results_visulisation_all(dir_work):
         for x_line_ in x_line:
             plt.plot_vertical_line(x=x_line_)
             plt.add_text(x=x_line_, y=y_end, s="{:.0f}".format(x_line_), va="bottom", ha="center", fontsize=6)
-        # plt.plot_vertical_line(x=45)
-        # plt.add_text(x=45, y=y_end, s="{:.0f}".format(x_line_), va="bottom", ha="center", fontsize=6)
 
         for y_line_ in y_line:
             plt.plot_horizontal_line(y=y_line_)
-            plt.add_text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="center", fontsize=6)
+            plt.add_text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="left", ha="center", fontsize=6)
+
+    plt.plot_vertical_line(x=57)
+    plt.add_text(x=57, y=1, s="{}".format("Max. 57"), va="bottom", ha="center", fontsize=6)
 
     plt.save_figure(dir_folder=dir_work, file_name=os.path.basename(dir_work), file_format=".png")
 

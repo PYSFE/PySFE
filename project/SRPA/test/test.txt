@@ -36,10 +36,10 @@ fire_hrr_density = 0.25                 # HRR density [MW/sq.m]
 #   Section properties for heat transfer evaluation
 # ------------------------------------------------------------------------------------------------------------------
 
-protection_protected_perimeter = 2.14   # Heated perimeter [m]
 beam_cross_section_area = 0.017         # Cross section area [sq.m]
 beam_rho = 7850							# Density [kg/m3]
-beam_temperature_goal = 620+273.15			    # Beam (steel) failure temperature for goal seek [K]. -1 to opt-out seeking.
+beam_temperature_goal = 620+273		    # Beam (steel) failure temperature for goal seek [K]. -1 to opt-out seeking.
+protection_protected_perimeter = 2.14   # Heated perimeter [m]
 protection_thickness = 0.0125           # Thickness of protection [m]. -1 to opt-out maximum steel temperature calc.
 protection_k = 0.2                      # Protection conductivity [W/m.K]
 protection_rho = 800                    # Density of protection [kg/cb.m]

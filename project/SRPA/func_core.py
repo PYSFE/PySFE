@@ -6,7 +6,7 @@ from scipy.stats.distributions import norm, gumbel_r
 from pyDOE import lhs
 
 import project.lhs_max_st_temp.ec_param_fire as pf
-import project.SPRS.tfm_alt as _fire_travelling
+import project.SRPA.tfm_alt as _fire_travelling
 from project.dat.steel_carbon import Thermal
 from project.func.temperature_steel_section import protected_steel_eurocode as _steel_temperature
 from project.func.temperature_fires import parametric_eurocode1 as _fire_param

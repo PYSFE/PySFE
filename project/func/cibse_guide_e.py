@@ -33,7 +33,7 @@ def _U(Q, r, h):
     if r/h > 0.15:
         U = 0.195 * Q ** (1/3) * h ** (1/2) / r ** (5/6)
     else:
-        U = 0.96 * Q / h**(1/3)
+        U = 0.96 * Q / h ** (1/3)
 
     return U
 
@@ -64,13 +64,15 @@ def _Q(alpha, t):
 
 if __name__ == "__main__":
     import numpy as np
+
+    # INPUTS
     time_start = 0
     time_step = 0.5
     time_end = 30 * 60
 
-    alpha = 0.0117 * 1000.  # [kW/s2]
-    r = 2.82  # 1.7 calculated
-    h = 2.5
+    alpha = 0.0117e3  # [W/s2]
+    r = 2.82  # Estimation
+    h = 6
     RTI = np.average([80, 200])
     T_d_activation = 273.15 + 68  # [K]
 
@@ -87,7 +89,6 @@ if __name__ == "__main__":
     # CALCULATION
     # calculate heat release rate
     Q = _Q(alpha, time)
-
     # calculate jet speed near sprinkler
     U = _U(Q, r, h)
 
@@ -108,15 +109,18 @@ if __name__ == "__main__":
     T_d[T_d == -1] = np.max(T_d)
     T_g[T_g == -1] = np.max(T_g)
 
-    print("{:25}: {:5.2f} [min].".format("Sprinkler activated at", np.min(time[T_d == np.max(T_d)])/60.))
-    print("{:25}: {:5.2f} [kW].".format("The maximum HRR is", np.max(Q)/1.e3))
+    print("{:25}: {:7.2f} [min]".format("Sprinkler activated at", np.min(time[T_d == np.max(T_d)])/60.))
+    print("{:25}: {:7.2f} [kW]".format("The maximum HRR is", np.max(Q)/1.e3))
 
     import matplotlib.pyplot as plt
     plt.figure(num=1)
     plt.subplot(211)
-    plt.plot(time/60, Q, label='HRR')
+    plt.plot(time/60, Q/1e6, label='HRR')
+    plt.ylabel("Heat Release Rate [MW]")
     plt.subplot(212)
     plt.plot(time/60, T_g-273.15, label="Temperature (near field)")
     plt.plot(time/60, T_d-273.15, label="Temperature (sprinkler)")
+    plt.xlabel("Time [min]")
+    plt.ylabel("Temperature [$\degree C$]")
     plt.legend()
     plt.show()

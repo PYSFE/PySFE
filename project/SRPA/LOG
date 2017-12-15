@@ -1,0 +1,9 @@
+* Add probablistic parameter upper and lower limits feature for q_fd
+* Test with travelling fire curve within func directory
+* Implement own latin hypercube sampling function
+
+
+15/12/2017 VERSION: 0.0 (alpha)
+- This app, Structural Reliability Probabilistic Analysis (SRPA), utilises Monte Carlo simulation method (i.e. one as
+  specified within PD 7974-7). Latin hypercube sampling technique is used for obtaining randomly generated probabilistic
+  parameters.
