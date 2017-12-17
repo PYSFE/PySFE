@@ -1,7 +1,13 @@
+FUTURE IMPROVEMENTS
 * Add probablistic parameter upper and lower limits feature for q_fd
 * Test with travelling fire curve within func directory
 * Implement own latin hypercube sampling function
+* Improve vertical and horizontal line plot for graphical output
+* Graphical user interface, with multiprocessing ability
+* Ouput plot for peak steel temperature
 
+00/00/2017 VERSION: 0.1 (WORKING)
+- Implemented newly coded latin hypercube sampling function, pyDOE external library is nolonger required.
 
 15/12/2017 VERSION: 0.0 (alpha)
 - This app, Structural Reliability Probabilistic Analysis (SRPA), utilises Monte Carlo simulation method (i.e. one as

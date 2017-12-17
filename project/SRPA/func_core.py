@@ -11,6 +11,7 @@ from project.dat.steel_carbon import Thermal
 from project.func.temperature_steel_section import protected_steel_eurocode as _steel_temperature
 from project.func.temperature_fires import parametric_eurocode1 as _fire_param
 from project.func.kwargs_from_text import kwargs_from_text
+from project.func.probabilistic_latin_hypercube import latin_hypercube_sampling
 
 
 def mc_calculation(
@@ -287,7 +288,7 @@ def mc_inputs_generator(dict_extra_variables_to_add=dict, dir_file=str):
     # dict_setting_vars = dict()
 
     # Read input variables from external text file
-    with open(dir_file, "r") as file_inputs:
+    with open(str(dir_file), "r") as file_inputs:
         string_inputs = file_inputs.read()
     dict_vars_0 = kwargs_from_text(string_inputs)
     dict_vars_0.update(dict_extra_variables_to_add)
@@ -326,6 +327,7 @@ def mc_inputs_generator(dict_extra_variables_to_add=dict, dir_file=str):
     # ------------------------------------------------------------------------------------------------------------------
 
     lhs_mat = lhs(n=6, samples=simulations, criterion=dict_setting_vars["lhs_criterion"])
+    # lhs_mat = latin_hypercube_sampling(num_samples=simulations, num_arguments=6)
 
     #   Set distribution mean and standard dev
 
