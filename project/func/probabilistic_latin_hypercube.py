@@ -11,21 +11,21 @@ def latin_hypercube_sampling(num_samples, num_arguments=1, sample_min=0, sample_
 
     # Generate sorted integers with correct shape
     list_random_num = []
-    for i in range(num_arguments):
-        mat_single_sorted = np.linspace(sample_min, sample_max, num_samples+1, dtype=float)
-        band_width = mat_single_sorted[1] - mat_single_sorted[0]
-        mat_single_sorted = mat_single_sorted[0:-1] + band_width * 0.5
-        np.random.shuffle(mat_single_sorted)
-        list_random_num.append(copy.copy(mat_single_sorted))
+    mat_random_num = np.linspace(sample_min, sample_max, num_samples+1, dtype=float)
+    mat_random_num += (mat_random_num[1] + mat_random_num[0]) * 0.5
+    mat_random_num = mat_random_num[0:-1]
+    mat_random_num = np.reshape(mat_random_num, (len(mat_random_num), 1))
+    mat_random_nums = mat_random_num * np.ones((1, num_arguments))
 
-    mat_random_nums = np.concatenate(list_random_num).reshape((num_samples, num_arguments), order="F")
+    # np.random.shuffle(mat_random_nums)
+
+    for i in range(np.shape(mat_random_nums)[1]):
+        np.random.shuffle(mat_random_nums[:,i])
 
     if num_arguments == 1:
-        result = mat_random_nums.flatten()
-    else:
-        result = mat_random_nums
+        mat_random_nums = mat_random_nums.flatten()
 
-    return result
+    return mat_random_nums
 
 
 if __name__ == "__main__":

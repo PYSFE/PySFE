@@ -3,7 +3,6 @@ import numpy as np
 from scipy import stats
 from scipy.interpolate import interp1d
 from scipy.stats.distributions import norm, gumbel_r
-from pyDOE import lhs
 
 import project.lhs_max_st_temp.ec_param_fire as pf
 import project.SRPA.tfm_alt as _fire_travelling
@@ -120,7 +119,7 @@ def mc_calculation(
     return max_temp, window_open_fraction, fire_load_density, fire_spread_speed, beam_position, temperature_max_near_field, fire_type
 
 
-def calc_time_equ_worker(arg):
+def calc_time_equiv_worker(arg):
     kwargs, q = arg
     result = calculation_time_equivalence(**kwargs)
     q.put(kwargs)
@@ -277,10 +276,6 @@ def mc_inputs_generator(dict_extra_variables_to_add=dict, dir_file=str):
 
     def linear_distribution(min, max, prob): return ((max - min) * prob) + min
 
-    #   Create random number array for each stochastic variable
-    def random_numbers_lhs(n, lhs_criterion, l_lim=0, u_lim=1):
-        return lhs(1, samples=n, criterion=lhs_criterion).flatten() * (u_lim - l_lim) + l_lim
-
     # ------------------------------------------------------------------------------------------------------------------
     #   Define the inputs from file
     # ------------------------------------------------------------------------------------------------------------------
@@ -326,8 +321,8 @@ def mc_inputs_generator(dict_extra_variables_to_add=dict, dir_file=str):
     # Distribution variables
     # ------------------------------------------------------------------------------------------------------------------
 
-    lhs_mat = lhs(n=6, samples=simulations, criterion=dict_setting_vars["lhs_criterion"])
-    # lhs_mat = latin_hypercube_sampling(num_samples=simulations, num_arguments=6)
+    # lhs_mat = lhs(n=6, samples=simulations, criterion=dict_setting_vars["lhs_criterion"])
+    lhs_mat = latin_hypercube_sampling(num_samples=simulations, num_arguments=6)
 
     #   Set distribution mean and standard dev
 

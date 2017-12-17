@@ -3,8 +3,7 @@ import time
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
-import copy
-from project.SRPA.func_core import mc_inputs_generator, calc_time_equ_worker
+from project.SRPA.func_core import mc_inputs_generator, calc_time_equiv_worker
 from project.func.temperature_fires import standard_fire_iso834 as standard_fire
 from project.cls.plot import Scatter2D
 from pickle import load as pload
@@ -73,7 +72,7 @@ def step2_main_calc(path_input_file, progress_print_interval=1):
     m = mp.Manager()
     q = m.Queue()
     p = mp.Pool(n_proc)
-    jobs = p.map_async(calc_time_equ_worker, [(kwargs, q) for kwargs in list_kwargs])
+    jobs = p.map_async(calc_time_equiv_worker, [(kwargs, q) for kwargs in list_kwargs])
     count_total_simulations = len(list_kwargs)
     while progress_print_interval:
         if jobs.ready():
