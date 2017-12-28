@@ -126,7 +126,7 @@ def mc_calculation(
 def calc_time_equiv_worker(arg):
     kwargs, q = arg
     result = calculation_time_equivalence(**kwargs)
-    q.put(kwargs)
+    q.put("index: {}".format(kwargs["index"]))
     return result
 
 
