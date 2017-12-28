@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+import os
 # import matplotlib
 # matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
@@ -47,15 +48,15 @@ class Scatter2D(object):
                 line = self._axes[1].plot(x, y, label=l)
                 self._lines.append(line[0])
 
-    def plot2(self, x, y, label="", second_axis=False):
+    def plot2(self, x, y, label="", second_axis=False, alpha=1.):
         if len(self._axes) == 0:
             self._axes.append(self._figure.add_subplot(111))
 
         if second_axis:
             self._axes.append(self._axes[0].twinx())
-            line = self._axes[1].plot(x, y, label=label)
+            line = self._axes[1].plot(x, y, label=label, alpha=alpha)
         else:
-            line = self._axes[0].plot(x, y, label=label)
+            line = self._axes[0].plot(x, y, label=label, alpha=alpha)
 
         self._lines.append(line[0])
 
@@ -114,6 +115,10 @@ class Scatter2D(object):
                     axis_scientific_format_y2=False,
                     axis_tick_width=.5,
                     axis_tick_length=2.5,
+                    axis_xtick_major_loc=None,
+                    axis_xtick_minor_loc=None,
+                    axis_ytick_major_loc=None,
+                    axis_ytick_minor_loc=None,
                     axis_grid_show=True):
         has_secondary = len(self._axes) > 1
 
@@ -135,6 +140,16 @@ class Scatter2D(object):
         self._axes[1].tick_params(axis='both', which='major', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in') if has_secondary else None
         self._axes[1].tick_params(axis='both', which='minor', labelsize=axis_tick_font_size, width=axis_tick_width, length=axis_tick_length, direction='in') if has_secondary else None
 
+        if axis_xtick_major_loc is not None:
+            self._axes[0].set_xticks(axis_xtick_major_loc)
+        if axis_xtick_minor_loc is not None:
+            self._axes[0].set_xticks(axis_xtick_minor_loc, minor=True)
+
+        if axis_ytick_major_loc is not None:
+            self._axes[0].set_yticks(axis_ytick_major_loc)
+        if axis_ytick_minor_loc is not None:
+            self._axes[0].set_yticks(axis_xtick_minor_loc, minor=True)
+
         self._axes[0].grid(axis_grid_show, linestyle="--", linewidth=.5, color="black")
 
         # tick_lines = self._axes[0].get_xticklines() + self._axes[0].get_yticklines()
@@ -149,10 +164,15 @@ class Scatter2D(object):
                      marker_fill_style="none",
                      marker_edge_width=.5,
                      line_width=1.,
-                     line_style="-"):
+                     line_style="-",
+                     line_colours=None,
+                     line_alpha=0):
 
-        c = [(80, 82, 199), (30, 206, 214), (179, 232, 35), (245, 198, 0), (255, 89, 87)]
-        c = [(colour[0] / 255., colour[1] / 255., colour[2] / 255.) for colour in c] * 100
+        if line_colours is None:
+            c = [(80, 82, 199), (30, 206, 214), (179, 232, 35), (245, 198, 0), (255, 89, 87)]
+            c = [(colour[0] / 255., colour[1] / 255., colour[2] / 255.) for colour in c] * 100
+        else:
+            c = line_colours * 500
 
         m = ['o', '^', 's', 'v', 'p', '*', 'D', 'd', '8', '1', 'h', '+', 'H'] * 40
 
@@ -294,7 +314,13 @@ class Scatter2D(object):
         self._figure.tight_layout()
         file_name += file_format
         # self.adjust_text()
+        file_name = os.path.join(dir_folder, file_name)
         self._figure.savefig("/".join([dir_folder, file_name]), bbox_inches='tight', dpi=dpi)
+
+    def save_figure2(self, path_file, dpi=300):
+        self._figure.tight_layout()
+        # self.adjust_text()
+        self._figure.savefig(path_file, bbox_inches='tight', dpi=dpi)
 
     def show(self):
         self._figure.show(warn=True)

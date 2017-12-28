@@ -6,10 +6,10 @@
 # ------------------------------------------------------------------------------------------------------------------
 
 simulations = 100
-building_height = (64.8 / (1-0.80))**0.5
+building_height = (64.8/(1-0.80))**0.5
 n_proc = 0
 # steel_temperature_to_fix = 273.15+620
-lhs_criterion = 'c'
+lhs_criterion = 'c'  # Depreciated and no longer take effects
 
 # ------------------------------------------------------------------------------------------------------------------
 #   Compartment dimensions all in [m]
@@ -27,10 +27,10 @@ window_height = 2.8						# Window height [m]
 
 time_start = 0                          # Start time of simulation [s]
 time_limiting = 0.333                   # Limiting time for fuel controlled case in EN 1991-1-2 parametric fire [hr]
-room_wall_thermal_inertia = 720         # Compartment thermal inertia [J/m2s1/2K]
-fire_duration = 18000                   # Maximum time in time array [s]
 time_step = 30                          # Time step used for fire and heat transfer [s]
+fire_duration = 18000                   # Maximum time in time array [s]
 fire_hrr_density = 0.25                 # HRR density [MW/sq.m]
+room_wall_thermal_inertia = 720         # Compartment thermal inertia [J/m2s1/2K]
 
 # ------------------------------------------------------------------------------------------------------------------
 #   Section properties for heat transfer evaluation
@@ -52,7 +52,7 @@ protection_c = 1700                     # Specific heat of protection [J/kg.K]
 qfd_std = 126     		                # Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
 qfd_mean = 420       	                # Fire load density - Gumbel distribution - mean [MJ/sq.m]
 qfd_ubound = 9999  		                # Fire load density - Gumbel distribution - upper limit [MJ/sq.m]
-qfd_lbound = 1  			            # Fire load density - Gumbel distribution - lower limit [MJ/sq.m]
+qfd_lbound = 0  			            # Fire load density - Gumbel distribution - lower limit [MJ/sq.m]
 glaz_min = 0.1  	                    # Min glazing fall-out fraction - Linear dist
 glaz_max = 0.999	                    # Max glazing fall-out fraction - Linear dist
 beam_min = 0.6            	            # Min beam location relative to compartment length for TFM [-] - Linear dist

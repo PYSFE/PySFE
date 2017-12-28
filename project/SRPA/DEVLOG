@@ -1,12 +1,15 @@
 FUTURE IMPROVEMENTS
-* Add probablistic parameter upper and lower limits feature for q_fd
 * Test with travelling fire curve within func directory
 * Improve vertical and horizontal line plot for graphical output
 * Graphical user interface, with multiprocessing ability
-* Ouput plot for peak steel temperature
 
-00/00/2017 VERSION: 0.1 (WORKING)
-- Implemented latin hypercube sampling function, pyDOE external library is nolonger required.
+
+00/00/2017 VERSION: 0.1 (alpha)
+- Implemented latin hypercube sampling function, pyDOE external library is nolonger required;
+- Boundary for q_fd, defined as q_fd_ubound and q_fd_lbound (upper and lower limit);
+- Now output plot for peak steel temperature according to input 'protection_thickness';
+- Inputs arguments are packed in a pandas DataFrame object instead of a list;
+- Automatically generate fires that satisfies selected percentile ±tolerance and save as .png and .csv.
 
 15/12/2017 VERSION: 0.0 (alpha)
 - This app, Structural Reliability Probabilistic Analysis (SRPA), utilises Monte Carlo simulation method (i.e. one as
