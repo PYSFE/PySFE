@@ -97,6 +97,8 @@ def step2_main_calc(path_input_file, progress_print_interval=1):
         else:
             print(strformat_1_1_1.format("Simulation progress:", str(int(q.qsize() * 100 / count_total_simulations)), "%"))
             time.sleep(progress_print_interval)
+    p.close()
+    p.join()
     results = jobs.get()
     time_count_simulation = time.perf_counter() - time_count_simulation
     print(strformat_1_1_1.format("Simulation completed in:", str(int(time_count_simulation)), "s"))
