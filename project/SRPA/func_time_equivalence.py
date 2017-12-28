@@ -98,7 +98,7 @@ def step2_main_calc(path_input_file, progress_print_interval=5):
         else:
             progress_now_ = int(q.qsize() * 100 / count_total_simulations)
             if progress_now_ >= (progress_now + progress_print_interval):
-                progress_now = int(progress_now_/progress_print_interval) * progress_now_
+                progress_now = int(progress_now_/progress_print_interval) * progress_print_interval
                 print(strformat_1_1_1.format("Simulation progress:", str(progress_now), "%"))
             time.sleep(2.5)
     p.close()
