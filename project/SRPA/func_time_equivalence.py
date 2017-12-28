@@ -56,7 +56,7 @@ def step1_inputs_maker(path_input_file):
     saveprint(os.path.basename(path_setting_file))
 
 
-def step2_main_calc(path_input_file, progress_print_interval=1):
+def step2_main_calc(path_input_file, progress_print_interval=5):
 
     # Make prefix, suffix, file and directory strings
     dir_work = os.path.dirname(path_input_file)
@@ -91,14 +91,19 @@ def step2_main_calc(path_input_file, progress_print_interval=1):
     p = mp.Pool(n_proc)
     jobs = p.map_async(calc_time_equiv_worker, [(kwargs, q) for kwargs in list_kwargs])
     count_total_simulations = len(list_kwargs)
+    progress_now = - progress_print_interval
     while progress_print_interval:
         if jobs.ready():
             break
         else:
-            print(strformat_1_1_1.format("Simulation progress:", str(int(q.qsize() * 100 / count_total_simulations)), "%"))
-            time.sleep(progress_print_interval)
+            progress_now_ = int(q.qsize() * 100 / count_total_simulations)
+            if progress_now_ >= (progress_now + progress_print_interval):
+                progress_now = int(progress_now_/progress_print_interval) * progress_now_
+                print(strformat_1_1_1.format("Simulation progress:", str(progress_now), "%"))
+            time.sleep(2.5)
     p.close()
     p.join()
+    results = jobs.get()
     time_count_simulation = time.perf_counter() - time_count_simulation
     print(strformat_1_1_1.format("Simulation completed in:", str(int(time_count_simulation)), "s"))
 
