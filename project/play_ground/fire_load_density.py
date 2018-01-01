@@ -12,3 +12,4 @@ y = 1 / (x * sigma_ * np.sqrt(2*np.pi)) * np.exp(-.5*((np.log(x)-miu_)/sigma_)**
 import matplotlib.pyplot as plt
 plt.plot(x,y)
 plt.show()
+

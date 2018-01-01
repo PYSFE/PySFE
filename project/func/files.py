@@ -3,12 +3,10 @@ import csv
 import os
 
 
-def write_list_to_csv(file_name, a_list):
+def list_to_csv(file_name, a_list):
     with open(file_name, 'wb') as f:
         output_writer = csv.writer(f, dialect='excel')
         output_writer.writerows(a_list)
-
-
 
 
 def list_all_files_with_suffix(directory_str, suffix_str, is_full_dir=True):
