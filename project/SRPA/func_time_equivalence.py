@@ -2,13 +2,13 @@ import os, copy, time
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
+from pickle import load as pload
+from pickle import dump as pdump
+from scipy.interpolate import interp1d
 from project.SRPA.func_core import mc_inputs_generator, calc_time_equiv_worker, mc_inputs_generator2
 from project.func.temperature_fires import standard_fire_iso834 as standard_fire
 from project.cls.plot import Scatter2D
-from pickle import load as pload
-from pickle import dump as pdump
 from project.func.files import list_all_files_with_suffix
-from scipy.interpolate import interp1d
 from project.SRPA.tfm_alt import travelling_fire as _fire_travelling
 from project.func.temperature_fires import parametric_eurocode1 as _fire_param
 
@@ -88,7 +88,7 @@ def step2_main_calc(path_input_file, progress_print_interval=5):
     time_count_simulation = time.perf_counter()
     m = mp.Manager()
     q = m.Queue()
-    p = mp.Pool(n_proc)
+    p = mp.Pool(n_proc, maxtasksperchild=1000)
     jobs = p.map_async(calc_time_equiv_worker, [(kwargs, q) for kwargs in list_kwargs])
     count_total_simulations = len(list_kwargs)
     progress_now = - progress_print_interval
@@ -199,7 +199,7 @@ def step4_results_visulisation(path_input_file):
         plt.plot_vertical_line(x=x_line_)
         plt.axes_primary.text(x=x_line_, y=y_end, s="{:.0f}".format(x_line_), va="bottom", ha="center", fontsize=6)
         plt.plot_horizontal_line(y=y_line_)
-        plt.axes_primary.text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="left", fontsize=6)
+        plt.axes_primary.text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="left", fontsize=4)
 
     file_name = "{} - {}{}".format(id_, "res_plot_teq", ".png")
     file_path = os.path.join(dir_work, file_name)
@@ -254,6 +254,7 @@ def step5_results_visulisation_all(dir_work):
 
         # obtain values: x, y, x_line (vertical line) and y_line (horizontal line)
         x = df_results["TIME EQUIVALENCE [min]"].values
+        x = np.sort(x)
         y = np.arange(1, len(x) + 1) / len(x)
         f_interp = interp1d(y, x)
         if height_building == 0:
@@ -276,8 +277,8 @@ def step5_results_visulisation_all(dir_work):
     if height_building > 0:
         x_line = set(x_line)
         y_line = set(y_line)
-        x_end = plt.axes_primary.get_xlim()[1] + 5
-        y_end = plt.axes_primary.get_ylim()[1] + 0.005
+        x_end = plt.axes_primary.get_xlim()[1]
+        y_end = plt.axes_primary.get_ylim()[1]
 
         x_line = [max(x_line)]
 
@@ -287,13 +288,14 @@ def step5_results_visulisation_all(dir_work):
 
         for y_line_ in y_line:
             plt.plot_horizontal_line(y=y_line_)
-            plt.add_text(x=x_end, y=y_line_, s="{:.3f}".format(y_line_), va="left", ha="center", fontsize=6)
+            plt.add_text(x=x_end, y=y_line_, s="{:.4f}".format(y_line_), va="center", ha="left", fontsize=4)
 
     # plt.plot_vertical_line(x=57)
     # plt.add_text(x=57, y=1, s="{}".format("Max. 57"), va="bottom", ha="center", fontsize=6)
 
-    file_name = "{}{}".format(os.path.basename(dir_work), ".png")
-    plt.save_figure(dir_folder=dir_work, file_name=file_name, file_format=".png")
+    file_name = "{} - {}{}".format(os.path.basename(dir_work), "teq_all", ".png")
+    file_path = os.path.join(dir_work, file_name)
+    plt.save_figure2(path_file=file_path)
     saveprint(file_name)
 
 
@@ -348,7 +350,14 @@ def step6_results_visualization_temperature(path_input_file):
     saveprint(os.path.basename(file_path))
 
 
-def step7_select_fires_teq(percentile, dir_work, id_, tolerance=0):
+def step7_select_fires_teq(dir_work, id_):
+
+    # Load settings
+    path_settings_file = os.path.join(dir_work, "{} - {}".format(id_, "prefs.p"))
+    dict_settings = pload(open(path_settings_file, "rb"))
+    height_building = dict_settings["building_height"]
+    percentile = dict_settings["select_fires_teq"]
+    tolerance = dict_settings["select_fires_teq_tol"]
 
     # Make full path of results and input argument files
     file_name_results = " - ".join([id_, "res_df.p"])

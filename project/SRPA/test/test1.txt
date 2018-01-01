@@ -49,7 +49,7 @@ protection_c = 1700                     # Specific heat of protection [J/kg.K]
 #  Distributed variables
 # ------------------------------------------------------------------------------------------------------------------
 
-qfd_std = 126     		                # Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
+qfd_std = 350     		                # Fire load density - Gumbel distribution - standard dev [MJ/sq.m]
 qfd_mean = 420       	                # Fire load density - Gumbel distribution - mean [MJ/sq.m]
 qfd_ubound = 9999  		                # Fire load density - Gumbel distribution - upper limit [MJ/sq.m]
 qfd_lbound = 0  			            # Fire load density - Gumbel distribution - lower limit [MJ/sq.m]

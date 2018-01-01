@@ -21,7 +21,7 @@ if __name__ == "__main__":
         teq.step3_results_numerical(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
         teq.step4_results_visulisation(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
         teq.step6_results_visualization_temperature(os.path.join(project_full_path, ff.format(id_, "res_df.p")))
-        teq.step7_select_fires_teq(0.8, project_full_path, id_, 0.01)
-        # print("")
+        teq.step7_select_fires_teq(project_full_path, id_)
+        print("")
 
     teq.step5_results_visulisation_all(project_full_path)

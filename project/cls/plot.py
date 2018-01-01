@@ -257,7 +257,7 @@ class Scatter2D(object):
             line.set_fillstyle(marker_fill_style)
 
     def add_text(self, x, y, s, va="center", ha="center", fontsize=6):
-        text_ = self._axes[0].text(x=x, y=y, s=s, va="bottom", ha="center", fontsize=6)
+        text_ = self._axes[0].text(x=x, y=y, s=s, va=va, ha=ha, fontsize=6)
         self._texts_added.append(text_)
         # self.adjust_text()
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import numpy as np
 import copy
+import numpy as np
 from scipy import stats
 from scipy.interpolate import interp1d
 from scipy.stats.distributions import norm, gumbel_r
@@ -422,7 +422,7 @@ def mc_inputs_generator2(dict_extra_variables_to_add=None, dir_file=str):
     simulations = dict_vars_0["simulations"]
 
     # Variable group definition
-    list_setting_vars = ["simulations", "steel_temp_failure", "n_proc", "building_height", "lhs_criterion"]
+    list_setting_vars = ["simulations", "steel_temp_failure", "n_proc", "building_height", "select_fires_teq", "select_fires_teq_tol"]
     list_interim_vars = ["qfd_std", "qfd_mean", "qfd_ubound", "qfd_lbound", "glaz_min", "glaz_max", "beam_min", "beam_max", "com_eff_min", "com_eff_max", "spread_min", "spread_max", "avg_nft"]
 
     # Extract separated
