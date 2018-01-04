@@ -1,12 +1,24 @@
 # -*- coding: utf-8 -*-
 import os
-import project.SRPA.func_time_equivalence as teq
+
+try:
+    import project.SRPA.func_time_equivalence as teq
+except ModuleNotFoundError:
+    import sys
+
+    __path_cwf = os.path.realpath(__file__)
+    __dir_project = os.path.dirname(os.path.dirname(__path_cwf))
+    __dir_project = os.path.dirname(__dir_project)
+
+    sys.path.insert(0, __dir_project)
+
+    import project.SRPA.func_time_equivalence as teq
 
 strformat_1_1 = "{:25}{}"
 
 if __name__ == "__main__":
     # SETTINGS
-    project_full_path = r"test"
+    project_full_path = r"C:\Users\Ian Fu\Documents\GitHub\PySFE\project\SRPA\test"
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)

@@ -50,6 +50,37 @@ def parametric_fire():
     return 0
 
 
+def iso834():
+    import pandas as pd
+    from project.func.temperature_fires import standard_fire_iso834 as fire
+    import numpy as np
+    t = np.arange(0, 30*60, 5)
+    res = {}
+    res["TIME"], res["TEMPERATURE"] = fire(t, 273.15)
+    res["TEMPERATURE"] -= 273.15
+    df = pd.DataFrame(res)
+    df.to_csv("out.csv", index=False)
+
+
+def t_square():
+    import pandas as pd
+    import numpy as np
+    from project.func.temperature_fires import t_square as fire
+
+    growth = "fast"
+    cap_time = 630
+
+    dict_res = dict()
+    dict_res["TIME [s]"] = np.arange(0, 30*60, 5)
+    dict_res["HRR [kW]"] = fire(dict_res["TIME [s]"], growth, cap_hrr_to_time=cap_time) / 1000
+    df = pd.DataFrame(dict_res)
+    df = df[["TIME [s]", "HRR [kW]"]]
+    df.to_csv("fire "+growth+str(cap_time)+".csv", index=False)
+
+
 if __name__ == "__main__":
-    travelling_fire()
-    parametric_fire()
+    # travelling_fire()
+    # parametric_fire()
+    t_square()
+
+    pass

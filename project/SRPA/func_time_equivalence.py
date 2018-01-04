@@ -57,6 +57,9 @@ def step1_inputs_maker(path_input_file):
 
 
 def step2_main_calc(path_input_file, progress_print_interval=5):
+    # Settings (local)
+    mp_maxtasksperchild = 1000
+
 
     # Make prefix, suffix, file and directory strings
     dir_work = os.path.dirname(path_input_file)
@@ -80,6 +83,13 @@ def step2_main_calc(path_input_file, progress_print_interval=5):
     # Check number of processes are to be used
     n_proc = os.cpu_count() if int(n_proc) < 1 else int(n_proc)
 
+    # Work out sleep time between each check print progress
+    progress_print_sleep = len(list_kwargs) / 200
+    if progress_print_sleep < 0.5:
+        progress_print_sleep = 0.5
+    elif progress_print_sleep > 500:
+        progress_print_sleep = 500
+
     # SIMULATION
     print(strformat_1_1.format("Input file:", id_))
     print(strformat_1_1.format("Total simulations:", len(list_kwargs)))
@@ -88,7 +98,7 @@ def step2_main_calc(path_input_file, progress_print_interval=5):
     time_count_simulation = time.perf_counter()
     m = mp.Manager()
     q = m.Queue()
-    p = mp.Pool(n_proc, maxtasksperchild=1000)
+    p = mp.Pool(n_proc, maxtasksperchild=mp_maxtasksperchild)
     jobs = p.map_async(calc_time_equiv_worker, [(kwargs, q) for kwargs in list_kwargs])
     count_total_simulations = len(list_kwargs)
     progress_now = - progress_print_interval
@@ -100,7 +110,7 @@ def step2_main_calc(path_input_file, progress_print_interval=5):
             if progress_now_ >= (progress_now + progress_print_interval):
                 progress_now = int(progress_now_/progress_print_interval) * progress_print_interval
                 print(strformat_1_1_1.format("Simulation progress:", str(progress_now), "%"))
-            time.sleep(2.5)
+            time.sleep(progress_print_sleep)
     p.close()
     p.join()
     results = jobs.get()
@@ -437,7 +447,6 @@ def step7_select_fires_teq(dir_work, id_):
                 "temperature_initial": 20 + 273.15,
             }
             tsec, temps = _fire_param(**inputs_parametric_fire)
-            # print("")
         elif fire_type == 1:  # travelling fire
             inputs_travelling_fire = {
                 "fire_load_density_MJm2": args["fire_load_density"],
@@ -457,7 +466,6 @@ def step7_select_fires_teq(dir_work, id_):
             }
             tsec, temps, hrr, r = _fire_travelling(**inputs_travelling_fire)
             temps += 273.15
-            # print("")
         else:
             print("FIRE TYPE UNKOWN.")
 
@@ -508,3 +516,4 @@ def step7_select_fires_teq(dir_work, id_):
     file_name = "{} - {}{}".format(id_, "selected_inputs", ".csv")
     df_input_arguments_selected.to_csv(os.path.join(dir_work, file_name))
     saveprint(file_name)
+
