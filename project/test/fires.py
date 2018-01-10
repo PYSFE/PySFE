@@ -79,7 +79,7 @@ def t_square():
 
 
 if __name__ == "__main__":
-    # travelling_fire()
+    travelling_fire()
     # parametric_fire()
     t_square()
 

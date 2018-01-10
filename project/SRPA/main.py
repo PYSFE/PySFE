@@ -14,17 +14,20 @@ except ModuleNotFoundError:
 
     import project.SRPA.func_time_equivalence as teq
 
-strformat_1_1 = "{:25}{}"
+_strfmt_1_1 = "{:25}{}"
 
 if __name__ == "__main__":
     # SETTINGS
     project_full_path = r"C:\Users\Ian Fu\Documents\GitHub\PySFE\project\SRPA\test"
+    project_full_path = input("Work directory: ")
+    project_full_path = project_full_path.replace('"', '')
+    project_full_path = project_full_path.replace("'", '')
 
     # ROUTINES
     project_full_path = os.path.abspath(project_full_path)
     list_files = teq.step0_parse_input_files(dir_work=project_full_path)
-    print(strformat_1_1.format("ENTRY", "CONTENT"))
-    print(strformat_1_1.format("Work directory:", project_full_path))
+    print(_strfmt_1_1.format("ENTRY", "CONTENT"))
+    print(_strfmt_1_1.format("Work directory:", project_full_path))
     ff = "{} - {}"
     for f in list_files:
         id_ = os.path.basename(f).split(".")[0]
