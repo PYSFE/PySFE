@@ -85,7 +85,7 @@ def main_function(
 
     # ***** Drived Variables
     emission_coefficient = 1.1  # K [m-1], obtained from Drysdale
-    flame_thickness = np.sqrt(lining_surface_area/6)  # x_F [m], assumed to be the average value of depth, width & height
+    flame_thickness = np.sqrt(lining_surface_area/6)  # x_F [m], assumed to be the average value of depth, width & room_height
     gas_effective_emissivity = 1 - np.exp(-emission_coefficient * flame_thickness)  # e_F, equation from Drysdale
 
     e_r_lining = 1 / (1 / gas_emissivity + 1 / lining_surface_emissivity - 1)  # resultant emissivity, lining
@@ -405,7 +405,7 @@ def timber_charring_rate(specimen_thickness, t_arr):  # unit: [m/s]
 
 
 # heat flux in respect to temperature
-# based on heat q = f(t) from Babrauskas 2005 and T = f(t) from ISO 834
+# based on heat q = f(c) from Babrauskas 2005 and T = f(c) from ISO 834
 def heat_flux_furnace_babrauskas2005(temperature_ndarray):
     T = temperature_ndarray
     t = (np.power((T-293.15)/345., 10.)) / 8.
@@ -418,7 +418,7 @@ def heat_flux_furnace_babrauskas2005(temperature_ndarray):
 # PARAMETERS:
 # average_heat_flux     q_bar   [W/m2]      time-averaged heat flux of the furnace internal from the test beginning
 # timber_density        rho     [kg/m3]     density of timber
-# exposure_time         t       [s]         time since the test beginning
+# exposure_time         c       [s]         time since the test beginning
 # oxygen_factor         k_ox    [-]         oxygen factor; 1.0 = plentiful of o2, 0.8 = 8-10% o2, 0.55 = 4% o2 concentr.
 def timber_charring_rate_babrauskas2005(average_heat_flux, timber_density, exposure_time, oxygen_content_volume=0.2):
     average_heat_flux /= 1000.  # convert from [W/m2] to [kW/m2]

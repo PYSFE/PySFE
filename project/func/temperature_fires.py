@@ -23,7 +23,7 @@ def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time
     :param time_start:
     :param time_padding:
     :param temperature_initial:
-    :return t:
+    :return c:
     :return T_g:
     """
     # Reference: Eurocode 1991-1-2; Jean-Marc Franssen, Paulo Vila Real (2010) - Fire Design of Steel Structures
@@ -198,7 +198,7 @@ def travelling_fire(
     :param w: [float][m] Compartment width
     :param s: [float][m/s] Fire spread speed
     # :param A_v: [float][m2] Ventilation area
-    # :param h_eq: [float][m] Weighted ventilation height
+    # :param h_eq: [float][m] Weighted ventilation room_height
     :param h_s: [float][m] Vertical distance between element to fuel bed.
     :param l_s: [float][m] Horizontal distance between element to fire front.
     :param time_ubound: [float][s] Maximum time for the curve.

@@ -75,7 +75,7 @@ def param_fire(dim1, dim2, dim3, op1dim, op2dim, glazf, qfd, tlim, b, duration, 
     gamma_orig = gamma_calc(open_fc, b)
     Olim = Olim_calc(qtd, tlim) #   limiting opening factor for fuel controlled case
     gammalim = gamma_calc(Olim, b) #    gamma lim for fuel controlled case
-    tstar_max_c = min(gamma_orig*tmax, tlim) #  t* for cooling phase calculations
+    tstar_max_c = min(gamma_orig*tmax, tlim) #  c* for cooling phase calculations
 
     tpmax = ((0.0002 * qtd) / open_fc) * gamma_orig
 

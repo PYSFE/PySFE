@@ -1,17 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import warnings
 
-def config_rectangle(v1, v2, v3):
+
+def config_rectangle(width, height, distance):
     # configuration factor for a parellel source and reciever
-    # = config_rectangle(width [v1], height [v2], distance [v3])
+    # = config_rectangle(width [width], room_height [room_height], distance [distance])
 
-    w = v1
-    h = v2
-    y = v3
+    w, h, y = width, height, distance
 
     # intermediate values. Calculation from FRS Technical Paper 2
 
-    if h > 0:  # Then
+    if h == 0. or w == 0. or y == 0.:
+        warnings.warn("In valid input variables: width={}, room_height={}, distance={}. "
+                      "Zero view factor is returned.".format(h, w, y))
+        phi = 0.
+    else:
         s = w / h
         alpha = w * h / y / y
         c1 = np.sqrt(alpha * s / (1 + alpha * s))
@@ -21,11 +25,62 @@ def config_rectangle(v1, v2, v3):
         c5 = c1 * np.arctan(c2) + c3 * np.arctan(c4)
         #   Configuration factor
         phi = c5 / (2*np.pi)
-    else:
-        phi = 0  #
+
     return phi
 
-if __name__=='__main__':
+
+def view_factor_customised(fire_location, fire_width, receiver_location=1., receiver_distance=1., room_height=2.):
+
+    # c = fire_location
+    # r = fire_location - receiver_location
+
+    phi = np.zeros_like(fire_location, dtype=float)
+
+    for i, v in enumerate(fire_location):
+        fire_width2 = fire_width[i]/2
+        fire_r = np.abs(fire_location[i] - receiver_location)
+
+        if fire_r < fire_width2:  # receiver within fire panel
+            # Find radiator dimensions
+            l_radiator_1 = fire_r + fire_width2
+            l_radiator_2 = fire_r - fire_width2
+
+            # Calculate phi for individual radiators
+            p_radiator_1 = config_rectangle(l_radiator_1, room_height/2, receiver_distance)
+            p_radiator_2 = config_rectangle(l_radiator_2, room_height/2, receiver_distance)
+
+            # Sum all phi
+            phi[i] = p_radiator_1 + p_radiator_2
+
+        elif fire_r > fire_width2:  # receiver outside fire panel
+            # Find radiator dimensions
+            l_cavity = fire_r - fire_width2
+            l_radiator = fire_r + fire_width2
+
+            # Calculate phi for individual radiators
+            p_radiator = config_rectangle(l_radiator, room_height/2, receiver_distance)
+            p_cavity = config_rectangle(l_cavity, room_height/2, receiver_distance)
+
+            # Sum all phi
+            phi[i] = p_radiator - p_cavity
+
+        elif fire_r == fire_width2:  # receiver on the edge of fire panel
+            # Find radiator dimensions
+            l_radiator = fire_width2 * 2
+
+            # Calculate phi for individual radiators
+            p_radiator = config_rectangle(l_radiator, room_height/2, receiver_distance)
+
+            # Sum all phi
+            phi[i] = p_radiator
+        else:
+            warnings.warn('fire_r = {}, fire_width2 = {}!'.format(fire_r, fire_width2))
+            phi[i] = -1
+
+    return phi * 2
+
+
+if __name__ == '__main__':
     width = 1
     height = 5
     distance = 2
@@ -59,6 +114,13 @@ if __name__=='__main__':
 
     print(phi_out)
 
-plt.plot(mid_out,phi_out)
-plt.grid(True)
-plt.show()
+    phi2 = view_factor_customised(fire_location=np.linspace(0, 10, 100),
+                                  fire_width=np.ones(shape=(100,), dtype=float),
+                                  receiver_location=11,
+                                  receiver_distance=distance,
+                                  room_height=height)
+
+    plt.plot(mid_out,phi_out)
+    plt.plot(np.linspace(0, 10, 100), phi2)
+    plt.grid(True)
+    plt.show()

@@ -2,7 +2,7 @@ import numpy as np
 import copy
 
 
-def latin_hypercube_sampling(num_samples, num_arguments=1, sample_min=0, sample_max=1):
+def latin_hypercube_sampling(num_samples, num_arguments=1, sample_min=0., sample_max=1.):
 
     if sample_min > sample_max:
         sample_max += sample_min
