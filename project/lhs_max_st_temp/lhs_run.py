@@ -140,9 +140,6 @@ for i in range(0,lhs_iterations):
         "protection_protected_perimeter": Hp
     }
 
-    a = mc_calculation(**dict_inputs)
-
-
     fled = qfd_lhs[i]
     open_frac = glaz_lhs[i]
     spread = spread_lhs[i]

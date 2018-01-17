@@ -34,14 +34,14 @@ def get_max_st_temp(tsec,temps,rho,c,Ap,kp,rhop,cp,dp,Hp):
 
 #   Define the inputs
 
-lhs_iterations = 1000
+lhs_iterations = 500
 
 #   Compartment dimensions
 
-breadth = 13.7
-depth = 25.5
+breadth = 16
+depth = 32
 height = 3.0
-win_width = 62
+win_width = 64
 win_height = 2.8
 
 #   Deterministic fire inputs
