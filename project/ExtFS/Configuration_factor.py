@@ -84,11 +84,11 @@ if __name__ == '__main__':
     width = 1
     height = 5
     distance = 2
-    phi = config_rectangle(width/2,height/2,distance)*4
-    print(phi)
+    print(config_rectangle(1, 5, 1) * 4)
 
     mid_out =[]
     phi_out=[]
+
 
     for mid in np.arange(0.1,10,0.01):
         location = 5
@@ -116,11 +116,11 @@ if __name__ == '__main__':
 
     phi2 = view_factor_customised(fire_location=np.linspace(0, 10, 100),
                                   fire_width=np.ones(shape=(100,), dtype=float),
-                                  receiver_location=11,
+                                  receiver_location=4.5,
                                   receiver_distance=distance,
                                   room_height=height)
 
     plt.plot(mid_out,phi_out)
     plt.plot(np.linspace(0, 10, 100), phi2)
     plt.grid(True)
-    plt.show()
+    # plt.show()
