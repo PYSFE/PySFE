@@ -1,3 +1,4 @@
 matplotlib==2.0.2
 pyDOE==0.3.8
 numpy==1.13.3
+pandas
