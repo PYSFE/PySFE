@@ -10,7 +10,7 @@ class XML2Dict(object):
 
     def _parse_node(self, t):
         d = {t.tag: {} if t.attrib else None}  # the variable 'd' is the constructed target dictionary
-        # 'c.tag' if have values, it is the first layer of the dictionary
+        # 't.tag' if have values, it is the first layer of the dictionary
         children = list(t)  # The following recursive traverse processing tree, until the leaf node
         if children:  # Determine whether the node is empty, recursive boundary conditions
             dd = defaultdict(list)
@@ -25,7 +25,7 @@ class XML2Dict(object):
             if children or t.attrib:
                 d[t.tag]['#text'] = text
             else:
-                d[t.tag] = text  # the text value as c.tag
+                d[t.tag] = text  # the text value as t.tag
         return d
 
     def parse(self, xml_file):

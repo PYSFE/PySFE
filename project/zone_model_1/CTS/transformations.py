@@ -460,7 +460,7 @@ def scale_from_matrix(matrix):
 
 def projection_matrix(point, normal, direction=None,
                       perspective=None, pseudo=False):
-    """Return matrix to project onto plane defined by point and normal.
+    """Return matrix to pySFE onto plane defined by point and normal.
 
     Using either perspective point, projection direction, or none of both.
 

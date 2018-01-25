@@ -7,10 +7,13 @@ FUTURE IMPROVEMENT OPTIONS
 * Construct verification procedures
 * Write a user manual
 * Write model technical description manual
+* Produce report for each work directory
+* Package all trivial outputs for each work file
 
 ##/##/2018 VERSION: 0.2 (alpha)
 - Script 'main.py' within the SRPA root folder is now runnable directly from command line with prompt to ask user to
   specify work directory;
+- 'main.py' now takes multiple work directories via both system argument input and Python input prompt;
 
 02/01/2018 VERSION: 0.1 (alpha)
 - Implemented latin hypercube sampling function, pyDOE external library is nolonger required;

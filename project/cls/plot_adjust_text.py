@@ -149,7 +149,7 @@ def repel_text(texts, renderer=None, ax=None, expand=(1.2, 1.2),
                only_use_max_min=False, move=False):
     """
     Repel texts from each other while expanding their bounding boxes by expand
-    (x, y), e.g. (1.2, 1.2) would multiply width and room_height by 1.2.
+    (x, y), e.g. (1.2, 1.2) would multiply width and height by 1.2.
     Requires a renderer to get the actual sizes of the text, and to that end
     either one needs to be directly provided, or the axes have to be specified,
     and the renderer is then got from the axes object.
@@ -200,7 +200,7 @@ def repel_text_from_bboxes(add_bboxes, texts, renderer=None, ax=None,
     """
     Repel texts from other objects' bboxes while expanding their (texts')
     bounding boxes by expand (x, y), e.g. (1.2, 1.2) would multiply width and
-    room_height by 1.2.
+    height by 1.2.
     Requires a renderer to get the actual sizes of the text, and to that end
     either one needs to be directly provided, or the axes have to be specified,
     and the renderer is then got from the axes object.
@@ -247,7 +247,7 @@ def repel_text_from_points(x, y, texts, renderer=None, ax=None,
     """
     Repel texts from all points specified by x and y while expanding their
     (texts'!) bounding boxes by expandby  (x, y), e.g. (1.2, 1.2)
-    would multiply both width and room_height by 1.2.
+    would multiply both width and height by 1.2.
     Requires a renderer to get the actual sizes of the text, and to that end
     either one needs to be directly provided, or the axes have to be specified,
     and the renderer is then got from the axes object.
@@ -415,7 +415,7 @@ def adjust_text(texts, x=None, y=None, add_objects=None, ax=None,
         try:
             add_bboxes = get_bboxes(add_objects, r, ax=ax)
         except:
-            raise ValueError("Can'c get bounding boxes from add_objects - is'\
+            raise ValueError("Can't get bounding boxes from add_objects - is'\
                              it a flat list of matplotlib objects?")
             return
         text_from_objects = True

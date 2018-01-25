@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-
 def travelling_fire(
         fire_load_density_MJm2,
         heat_release_rate_density_MWm2,

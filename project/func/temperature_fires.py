@@ -6,24 +6,23 @@ logging.basicConfig(filename="log.txt", level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
-def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time_end=7200., time_step=1., time_start=0., time_padding=(0, 0), T_0=293.15, is_rich=False):
+def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time_end=7200, time_step=1, time_start=0, time_padding = (0, 0),temperature_initial=293.15, is_more_return=False):
     """Function Description: (SI UNITS ONLY)
     This function calculates the time-temperature curve according to Eurocode 1 part 1-2, Appendix A.
-    :param A_t:                 [m²]
-    :param A_f:                 [m²]
-    :param A_v:                 [m²]
-    :param h_eq:                [W]
-    :param q_fd:                [J/m²]
-    :param lambda_:             []
-    :param rho:                 [kg/m³]
-    :param c:                   []
-    :param t_lim:               [s]
-    :param time_end:            [s]
-    :param time_step:           [s]
-    :param time_start:          [s]
-    :param time_padding:        [s]
-    :param T_0: [K]
-    :param is_rich:             [bool][-] Return an extra variable which is a dictionary contents potentially useful stuff.
+    :param A_t:
+    :param A_f:
+    :param A_v:
+    :param h_eq:
+    :param q_fd:
+    :param lambda_:
+    :param rho:
+    :param c:
+    :param t_lim:
+    :param time_end:
+    :param time_step:
+    :param time_start:
+    :param time_padding:
+    :param temperature_initial:
     :return t:
     :return T_g:
     """
@@ -35,7 +34,7 @@ def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time
     time_end /= 3600  # [s] -> [hr]
     time_step /= 3600  # [s] -> [hr]
     time_start /= 3600  # [s] -> [hr]
-    T_0 -= 273.15  # [K] -> [C]
+    temperature_initial -= 273.15  # [K] -> [C]
 
     # ACQUIRING REQUIRED VARIABLES
     t = np.arange(time_start, time_end, time_step, dtype=float)
@@ -99,27 +98,28 @@ def parametric_eurocode1(A_t, A_f, A_v, h_eq, q_fd, lambda_, rho, c, t_lim, time
     t_star, t_star_max = _variables(t, Gamma, t_max)
 
     if t_max >= t_lim:  # ventilation controlled fire
-        T_max = _temperature_heating(t_star_max, T_0)
-        T_heating_g = _temperature_heating(Gamma * t, T_0)
+        T_max = _temperature_heating(t_star_max, temperature_initial)
+        T_heating_g = _temperature_heating(Gamma * t, temperature_initial)
         T_cooling_g = _temperature_cooling_vent(t_star_max, T_max, t_star)
         fire_type = "ventilation controlled"
     else:  # fuel controlled fire
         t_star_, t_star_max_ = _variables_2(t, t_lim, q_td, b, O)
-        T_max = _temperature_heating(t_star_max_, T_0)
-        T_heating_g = _temperature_heating(t_star_, T_0)
+        T_max = _temperature_heating(t_star_max_, temperature_initial)
+        T_heating_g = _temperature_heating(t_star_, temperature_initial)
         T_cooling_g = _temperature_cooling_fuel(t_star_max, T_max, t_star, Gamma, t_lim)
         fire_type = "fuel controlled"
 
     T_g = np.minimum(T_heating_g, T_cooling_g)
     T_g[T_g<0] = 0
 
-    # UNITS: Eq. -> SI
-    t *= 3600  # [hr] -> [s]
-    T_g += 273.15  # [°C] -> [K]
+    data_all = {"fire_type": fire_type}
 
-    if is_rich:
-        data_rich = {"fire_type": fire_type}
-        return t, T_g, data_rich
+    # UNITS: Eq. -> SI
+    t *= 3600
+    T_g += 273.15
+
+    if is_more_return:
+        return t, T_g, data_all
     else:
         return t, T_g
 
@@ -189,24 +189,22 @@ def travelling_fire(
         h_s,
         l_s,
         time_ubound=10800,
-        time_step=1,
-        is_rich=False):
+        time_step=1):
     """
-    :param T_0:             [float][K] Initial temperature.
-    :param q_fd:            [float][J m2] Fire load density.
-    :param RHRf:            [float][W m2] Heat release rate density
-    :param l:               [float][m] Compartment length
-    :param w:               [float][m] Compartment width
-    :param s:               [float][m/s] Fire spread speed
-    # :param A_v:           [float][m2] Ventilation area
-    # :param h_eq:          [float][m] Weighted ventilation room_height
-    :param h_s:             [float][m] Vertical distance between element to fuel bed.
-    :param l_s:             [float][m] Horizontal distance between element to fire front.
-    :param time_ubound:     [float][s] Maximum time for the curve.
-    :param time_step:       [float][s] Static time step.
-    :param is_rich:         [bool][-] Return an extra variable which is a dictionary contents potentially useful stuff.
-    :return time:           [ndarray][s] An array representing time incorporating 'temperature'.
-    :return temperature:    [ndarray][K] An array representing temperature incorporating 'time'.
+    :param T_0: [float][K] Initial temperature.
+    :param q_fd: [float][J m2] Fire load density.
+    :param RHRf: [float][W m2] Heat release rate density
+    :param l: [float][m] Compartment length
+    :param w: [float][m] Compartment width
+    :param s: [float][m/s] Fire spread speed
+    # :param A_v: [float][m2] Ventilation area
+    # :param h_eq: [float][m] Weighted ventilation height
+    :param h_s: [float][m] Vertical distance between element to fuel bed.
+    :param l_s: [float][m] Horizontal distance between element to fire front.
+    :param time_ubound: [float][s] Maximum time for the curve.
+    :param time_step: [float][s] Static time step.
+    :return time: [ndarray][s] An array representing time incorporating 'temperature'.
+    :return temperature: [ndarray][K] An array representing temperature incorporating 'time'.
     """
 
     # SETTINGS
@@ -271,16 +269,11 @@ def travelling_fire(
 
     temperature = T_g
 
-    if is_rich:
-        data_abundent = {
-            "heat release [J]": Q,
-            "distance fire to element [m]": r,
-            'fire length [m]': l_fire_front - l_fire_end,
-            'fire center location [m]': l_fire_median
-        }
-        return time, temperature, data_abundent
-    else:
-        return time, temperature
+    data_trivial = {
+        "heat release [J]": Q,
+        "distance fire to element [m]": r
+    }
+    return time, temperature, data_trivial
 
 
 def t_square(time, growth_factor, cap_hrr=0, cap_hrr_to_time=0, terminate_at_peak=False):

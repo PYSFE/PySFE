@@ -1,4 +1,4 @@
 lhs_mp_fr_period.py
-*   Within "func.py", time equivalence search will return -1 when time equivalence is over the defined ISO834 curve's
+*   Within "func.py", time equivalence seek will return 0 and 3 hrs when time equivalence is over the defined ISO834 curve's
     time domain. i.e. ISO834 current have maximum time duration of 3 hours.
 *   Limits for q_fd currently does not do anythin.

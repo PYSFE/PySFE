@@ -236,7 +236,7 @@ def step5_results_visulisation_all(dir_work):
     plt_format = {"figure_size_scale": 0.4,
                   "axis_lim_y1": (0, 1),
                   "axis_lim_x": (0, 120),
-                  "legend_is_shown": False,
+                  "legend_is_shown": True,
                   "axis_label_x": "Time Equivalence [min]",
                   "axis_label_y1": "Fractile",
                   "marker_size": 0}
@@ -389,7 +389,7 @@ def step7_select_fires_teq(dir_work, id_):
     # Convert 'percentile_ubound' and 'percentile_lbound' to integers according to actual range i.e. 'index=1000'
     # print(df_results.to_string)
 
-    index_max = max(df_results.index.values)
+    index_max = int(max(df_results.index.values))
 
     percentile_ubound = percentile + abs(tolerance)
     percentile_lbound = percentile - abs(tolerance)
@@ -409,8 +409,6 @@ def step7_select_fires_teq(dir_work, id_):
     # df_results.reset_index(drop=True, inplace=True)
     # print(df_results.index.values)
     # print(df_results["TIME EQUIVALENCE [min]"].values)
-
-    # print(masked_range)
 
     list_index_selected_fires = df_results.iloc[range_selected].index.values
     df_results_selected = df_results.iloc[range_selected]

@@ -127,7 +127,7 @@ class EurocodeParametricFire(object):
         totalEnclosureArea      {float, m²}             Total internal surface area, including openings
         floorArea               {float, m²}             Floor area
         openingArea             {float, m²}             Vertical open area
-        weightedOpeningHeight   {float, m}              Weighted average vertical openings room_height
+        weightedOpeningHeight   {float, m}              Weighted average vertical openings height
         density                 {float, kg/m³}          Density of enclosure
         specificHeat            {float, J/kg/K}         Specific heat of enclosure
         thermalConductivity     {float, W/m/K}          Thermal conductivity of enclosure

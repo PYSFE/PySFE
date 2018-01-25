@@ -64,7 +64,7 @@ class SomeObject(QObject):
 
 # Using a QRunnable
 # http://qt-project.org/doc/latest/qthreadpool.html
-# Note that a QRunnable isn'c a subclass of QObject and therefore does
+# Note that a QRunnable isn't a subclass of QObject and therefore does
 # not provide signals and slots.
 class Runnable(QRunnable):
 
