@@ -1,6 +1,0 @@
-raw_data = csvread('200.csv',1,0);
-R_t200 = raw_data(:,1);
-A_f200 = raw_data(:,2);
-t_max = raw_data(:,3);
-fuel200 = raw_data(:,4);
-scatter3(R_t, A_f, t_max)
